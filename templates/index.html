@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to hangman!</title>
+    <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="/static/normalize.css">
+    <link rel="stylesheet" href="/static/skeleton.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="twelve columns header">
+                <h1>Welcome to hangman game!</h1>
+                <p>I'm thinking of a word that is: {{ word_length }} characters long.</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <h4>Game data here:</h4>
+            <p>{{ user_letter }}</p>
+            
+            <p><strong>Available letters: </strong>{{ available_letters }}</p>
+            <p>Your progress: {{ guessed_word }}</p>
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <p>{{ message }}</p>
+                    {% endfor %}
+                {% else %}
+                    <p>Let's start a game!</p>    
+                {% endif %}
+            {% endwith %}
+            <p>Attempts left: {{ attempts }}</p>
+            {{ word }} {{result}}
+        </div>
+    <form action="{{ url_for('get_data') }}" method="POST" autocomplete="off">        
+    <div class="row">
+        <div class="one column">
+            <input type="text" , value="" name="user_letter_field" maxlength="1" size="5" />
+        </div>
+        <div class="two columns">
+            <p><input class="button-primary" type="submit" value="Submit letter" /></p>
+        </div>
+    </div>
+    </form>
+
+    <h5>Would you like to start over?</h5>
+    <form action="{{ url_for('reset_cookie') }}" method="POST">
+        <input type="hidden" , value="" name="reset_cookies" maxlength="1" size="1" />
+        <p><input type="submit" value="Reset game" /></p>
+    </form>
+    </div>
+
+</body>
+
+</html>
