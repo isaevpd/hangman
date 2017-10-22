@@ -4,7 +4,7 @@ import psycopg2
 from peewee import *
 from playhouse.migrate import *
 from hangman import loadWords, chooseWord
-import time
+import uuid
 
 # URL = urlparse.urlparse(os.environ['DATABASE_URL'])
 # DBNAME = URL.path[1:]
@@ -20,6 +20,7 @@ db = PostgresqlDatabase(
     host='localhost'
 )
 
+migrator = PostgresqlMigrator(db)
 
 
 
@@ -52,7 +53,7 @@ class word_created(Model):
 class Game(Model):
     '''
     '''
-    user_identifier = FloatField(unique=True)
+    game_uuid = UUIDField()
     word = CharField(max_length=256)
     word_length = IntegerField()
     result = CharField(max_length=15, default='in_progress')
@@ -78,7 +79,18 @@ class LetterGuessed(Model):
         database = db
 
 db.get_conn()
-db.create_tables([LetterGuessed], safe=True)
 
-aa = Game.update(result='won').where(Game.word == 'rejoined')
-aa.execute()
+attempts_left = IntegerField(null=True)
+result = CharField(max_length=11, default='in_progress')
+game_uuid = UUIDField(null=True)
+migrate(
+    #migrator.rename_column('letterguessed','state','presentation'),
+    #migrator.rename_column('letterguessed','game','game_id'),
+    #migrator.add_column('letterguessed','attempts_left',attempts_left)
+    #migrator.add_column('game','game_uuid',game_uuid)
+)
+
+games = Game.select()
+for game in games:
+    print(game)
+    game.save(game_uuid=uuid.uuid4())

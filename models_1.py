@@ -65,14 +65,12 @@ class Letter(Model):
 
     class Meta:
         database = db
-    
-   
 
 
 class Game(Model):
     '''
     '''
-    user_identifier = FloatField(unique=True)
+    game_uuid = UUIDField(unique=True)
     word = CharField(max_length=256)
     word_length = IntegerField()
     result = CharField(max_length=10, default='in_progress')
@@ -81,10 +79,10 @@ class Game(Model):
         database = db
 
     @classmethod
-    def create_game(cls, user_identifier, word, word_length):
+    def create_game(cls, game_uuid, word, word_length):
         '''
         '''
-        cls.create(user_identifier=user_identifier,
+        cls.create(game_uuid=game_uuid,
                    word=word, word_length=word_length)
 
 
@@ -97,8 +95,6 @@ class LetterGuessed(Model):
 
     class Meta:
         database = db
-
-    
 
 
 def create_result(word, attempts, result):
