@@ -4,6 +4,7 @@ import psycopg2
 from peewee import *
 from hangman import loadWords, chooseWord
 import time
+from datetime import datetime
 
 
 # URL = urlparse.urlparse(os.environ['DATABASE_URL'])
@@ -17,7 +18,8 @@ db = PostgresqlDatabase(
     'local_db',
     user='germaniakovlev',
     password='',
-    host='localhost'
+    host='localhost',
+    autorollback=True
 )
 
 
@@ -73,7 +75,10 @@ class Game(Model):
     game_uuid = UUIDField(unique=True)
     word = CharField(max_length=256)
     word_length = IntegerField()
-    result = CharField(max_length=10, default='in_progress')
+    result = CharField(max_length=16, default='in_progress')
+    create_time = DateTimeField(default=datetime.utcnow)
+    update_time = DateTimeField(default=datetime.utcnow)
+    #game_uuid_new = UUIDField(unique=True, null=True)
 
     class Meta:
         database = db
@@ -89,12 +94,24 @@ class Game(Model):
 class LetterGuessed(Model):
     '''
     '''
-    game_id = ForeignKeyField(Game, related_name='letters')
+    game = ForeignKeyField(Game, related_name='letters')
     letter = CharField(max_length=1)
-    state = CharField(max_length=500)
+    representation = CharField(max_length=500)
+    attempts_left = IntegerField()
+    message = CharField(max_length=256)
+    create_time = DateTimeField(default=datetime.utcnow)
 
     class Meta:
         database = db
+        order_by = ['-create_time']
+
+    @classmethod
+    def create_letter(cls, game, letter, representation, attempts_left, message):
+        '''
+        '''
+        cls.create(game=game, letter=letter, representation=representation,
+                   attempts_left=attempts_left,
+                   message=message)
 
 
 def create_result(word, attempts, result):
