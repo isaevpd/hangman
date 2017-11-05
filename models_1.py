@@ -97,6 +97,7 @@ class LetterGuessed(Model):
     game = ForeignKeyField(Game, related_name='letters')
     letter = CharField(max_length=1)
     representation = CharField(max_length=500)
+    letters_guessed = CharField(max_length=1000)
     attempts_left = IntegerField()
     message = CharField(max_length=256)
     create_time = DateTimeField(default=datetime.utcnow)
@@ -106,11 +107,11 @@ class LetterGuessed(Model):
         order_by = ['-create_time']
 
     @classmethod
-    def create_letter(cls, game, letter, representation, attempts_left, message):
+    def create_letter(cls, game, letter, representation, letters_guessed, attempts_left, message):
         '''
         '''
         cls.create(game=game, letter=letter, representation=representation,
-                   attempts_left=attempts_left,
+                   letters_guessed=letters_guessed,attempts_left=attempts_left,
                    message=message)
 
 
