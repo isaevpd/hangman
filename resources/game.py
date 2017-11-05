@@ -1,4 +1,5 @@
-import uuid, string
+import uuid
+import string
 
 from flask import jsonify, Blueprint, session
 from flask.ext.restful import (Resource, Api, reqparse,
@@ -12,18 +13,22 @@ from hangman import loadWords, chooseWord, getGuessedWord
 
 class Representation(fields.Raw):
     def output(self, key, obj):
-        # 
+        #
         return ''.join('_' for _ in obj.word)
+
 
 class Result(fields.Raw):
     def output(self, key, obj):
         game_new = Game.get(Game.id == obj.game_id)
         return game_new.result
 
+
 def valid_letter(value):
     if value.lower() not in string.ascii_letters:
-        raise ValueError("You didn't provide a letter from 'abcdefghijklmnopqrstuvwxyz'")
+        raise ValueError(
+            "You didn't provide a letter from 'abcdefghijklmnopqrstuvwxyz'")
     return value
+
 
 MAX_ATTEMPTS = 8
 
@@ -86,40 +91,40 @@ class Letter(Resource):
         game = Game.get(Game.game_uuid == args['game_uuid'])
         letter_guessed = args['letter'].lower()
 
-        def check_result():
-            if representation == game.word:
+        def update_game_result(updated_representation):
+            if updated_representation == game.word:
                 game.result = 'won'
                 game.save()
-            
+
             elif attempts_left == 0:
                 game.result = 'lost'
                 game.save()
 
         def already_guessed():
-            LetterGuessed.create_letter(
-                    game.id,
-                    letter_guessed,
-                    representation,
-                    track_letters_guessed(letters_guessed),
-                    attempts_left,
-                    'already_guessed')
+            letter = LetterGuessed.create(
+                game=game.id,
+                letter=letter_guessed,
+                representation=representation,
+                letters_guessed=track_letters_guessed(letters_guessed),
+                attempts_left=attempts_left,
+                message='already_guessed')
+            print('result update status ----- already guessed' +
+                  str(game.word == representation))
+            return letter
 
-            return game.letters.get()
-        
         def incorrect_guess():
             '''
             '''
-            LetterGuessed.create_letter(
-                    game.id,
-                    letter_guessed,
-                    representation,
-                    track_letters_guessed(letters_guessed),
-                    attempts_left,
-                    'incorrect_guess')
-            
-            
-            check_result()
-            return game.letters.get()
+            letter = LetterGuessed.create(
+                game=game.id,
+                letter=letter_guessed,
+                representation=representation,
+                letters_guessed=track_letters_guessed(letters_guessed),
+                attempts_left=attempts_left,
+                message='incorrect_guess')
+
+            update_game_result(representation)
+            return letter
 
         def correct_guess():
             '''
@@ -130,18 +135,16 @@ class Letter(Resource):
                 letter_guessed if index in letter_indices
                 else letter for index, letter in enumerate(representation))
 
-            LetterGuessed.create_letter(
-                game.id,
-                letter_guessed,
-                updated_representation,
-                track_letters_guessed(letters_guessed),
-                attempts_left,
-                'correct_guess')
+            letter = LetterGuessed.create_letter(
+                game=game.id,
+                letter=letter_guessed,
+                representation=updated_representation,
+                letters_guessed=track_letters_guessed(letters_guessed),
+                attempts_left=attempts_left,
+                message='correct_guess')
 
-            return game.letters.get()
-
-        def game_is_over():
-            return game.letters.get()
+            update_game_result(updated_representation)
+            return letter
 
         def track_letters_guessed(letters_guessed):
             if letter_guessed not in letters_guessed:
@@ -154,23 +157,20 @@ class Letter(Resource):
         except LetterGuessed.DoesNotExist:
             attempts_left = MAX_ATTEMPTS  # 8
             representation = '_' * len(game.word)
-            letters_guessed = letter_guessed
+            letters_guessed = ''
 
         else:
             attempts_left = letter.attempts_left
             representation = letter.representation
-            letters_guessed = letter.letters_guessed 
-
-        check_result()
+            letters_guessed = letter.letters_guessed
 
         if game.result in ('won', 'lost'):
-            return game_is_over()
-            
+            return game.letters.get()
+
         elif letter_guessed in letters_guessed:
             return already_guessed()
 
         elif letter_guessed in game.word:
-            check_result()
             return correct_guess()
 
         else:
