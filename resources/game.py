@@ -33,13 +33,13 @@ class Result(fields.Raw):
 
 
 def valid_letter(value):
-    if value.lower() not in string.ascii_lowercase:
-        raise ValueError("You didn't provide a letter from %s" % string.ascii_lowercase)
-    elif not value.strip():
+    if not value.strip():
         raise ValueError("You didn't provide a letter")
-    elif len(value) > 1:
-        raise ValueError('test')
-    return value
+    elif len(value.strip()) > 1:
+        raise ValueError('You provided more than 1 letter')
+    elif value.lower().strip() not in string.ascii_lowercase:
+        raise ValueError("You didn't provide a letter from %s" % string.ascii_lowercase)
+    return value.strip()
 
 
 MAX_ATTEMPTS = 8
