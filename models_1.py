@@ -78,17 +78,21 @@ class Game(Model):
     result = CharField(max_length=16, default='in_progress')
     create_time = DateTimeField(default=datetime.utcnow)
     update_time = DateTimeField(default=datetime.utcnow)
-    #game_uuid_new = UUIDField(unique=True, null=True)
+    
 
     class Meta:
         database = db
+    
+    def save(self, *args, **kwargs):
+        self.update_time = datetime.utcnow()
+        return super(Game, self).save(*args, **kwargs)
 
-    @classmethod
-    def create_game(cls, game_uuid, word, word_length):
-        '''
-        '''
-        cls.create(game_uuid=game_uuid,
-                   word=word, word_length=word_length)
+    # @classmethod
+    # def create_game(cls, game_uuid, word, word_length):
+    #     '''
+    #     '''
+    #     cls.create(game_uuid=game_uuid,
+    #                word=word, word_length=word_length)
 
 
 class LetterGuessed(Model):
@@ -96,8 +100,8 @@ class LetterGuessed(Model):
     '''
     game = ForeignKeyField(Game, related_name='letters')
     letter = CharField(max_length=1)
-    representation = CharField(max_length=500)
-    letters_guessed = CharField(max_length=1000)
+    #representation = CharField(max_length=500)
+    #letters_guessed = CharField(max_length=1000)
     attempts_left = IntegerField()
     message = CharField(max_length=256)
     create_time = DateTimeField(default=datetime.utcnow)
@@ -110,9 +114,11 @@ class LetterGuessed(Model):
     def create_letter(cls, game, letter, representation, letters_guessed, attempts_left, message):
         '''
         '''
-        cls.create(game=game, letter=letter, representation=representation,
-                   letters_guessed=letters_guessed,attempts_left=attempts_left,
-                   message=message)
+        return cls.create(
+            game=game, letter=letter, representation=representation,
+            letters_guessed=letters_guessed,attempts_left=attempts_left,
+            message=message
+        )
 
 
 def create_result(word, attempts, result):
