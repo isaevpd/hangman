@@ -6,6 +6,7 @@
   <div id="main">
     <h1>Welcome to Hangman game!</h1>
     <div id="word-elem"></div>
+    <div id="word-len"></div>
     <div id="attempts-left"></div>
     <div id="info"></div>
     <h3>Guess a letter!</h3>
@@ -20,6 +21,7 @@
 
   <script>
     const form = document.querySelector('form');
+    const wordLen = document.querySelector('div#word-len')
     const letterInput = document.querySelector('input');
     const wordElem = document.querySelector('div#word-elem');
     const attemptsElem = document.querySelector('div#attempts-left');
@@ -39,6 +41,7 @@
 
     function render(data) {
       wordElem.innerText = data.representation;
+      wordLen.innerText = "Secret word is " + data.word_length + " letters long."
       attemptsElem.innerText = "Attempts left: " + data.attempts_left;
       info.style.display = '';
       availableLetters.innerText = data.available_letters
