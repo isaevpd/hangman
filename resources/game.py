@@ -44,11 +44,12 @@ def valid_letter(value):
 
 MAX_ATTEMPTS = 8
 
-GAME_FIELDS = {
-    'word_length': fields.Integer,
-    'game_uuid': fields.String(),
-    'representation': Representation
-}
+# Not using @marshal_with for Word.GET
+# GAME_FIELDS = {
+#     'word_length': fields.Integer,
+#     'game_uuid': fields.String(),
+#     'representation': Representation
+# }
 
 LETTER_FIELDS = {
     'letter': fields.String(),
@@ -75,10 +76,14 @@ class Word(Resource):
             word=word,
             word_length=len(word)
         )
+ 
         output = jsonify(
             word_length=len(word),
-            representation= ''.join('_' for _ in word)
+            representation= ''.join('_' for _ in word),
+            attempts_left=MAX_ATTEMPTS,
+            available_letters=string.ascii_lowercase
         )
+
         resp = make_response(output)
         resp.set_cookie('hangman_game_id', str(game_uuid))
         return resp
@@ -96,10 +101,10 @@ class Letter(Resource):
         )
 
         self.reqparse.add_argument(
-            'game_uuid',
+            'hangman_game_id',
             required=True,
             help='No game_identifier provided',
-            location=['cookie']
+            location=['cookies']
         )
         super().__init__()
 
@@ -107,7 +112,7 @@ class Letter(Resource):
     def post(self):
         args = self.reqparse.parse_args()
         # Get game object using uuid from the cookie
-        game = Game.get(Game.game_uuid == args['game_uuid'])
+        game = Game.get(Game.game_uuid == args['hangman_game_id'])
         letter_guessed = args['letter'].lower()
 
         def update_game_result(representation):
