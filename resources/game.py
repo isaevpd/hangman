@@ -85,7 +85,8 @@ class Word(Resource):
         )
 
         resp = make_response(output)
-        resp.set_cookie('hangman_game_id', str(game_uuid))
+        # Cookie expires in 24 hours
+        resp.set_cookie('hangman_game_id', str(game_uuid), 86400)
         return resp
 
 
@@ -146,11 +147,15 @@ class Letter(Resource):
                 string.ascii_lowercase
             ))
 
-        letters = game.letters.select()
+        letters = list(
+            game.letters.select().order_by(
+                LetterGuessed.create_time.desc()
+            )
+        )
         letters_guessed = {l.letter for l in letters}
 
         try:
-            last_letter = letters[-1]
+            last_letter = letters[0]
         except IndexError:
             attempts_left = MAX_ATTEMPTS
         else:
