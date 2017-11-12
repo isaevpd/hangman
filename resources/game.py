@@ -1,7 +1,7 @@
 import uuid
 import string
 
-from flask import jsonify, Blueprint, session, abort
+from flask import jsonify, Blueprint, session, abort, make_response
 from flask.ext.restful import (
     Resource, Api, reqparse,
     inputs, fields, marshal,
@@ -64,18 +64,24 @@ class Word(Resource):
     '''
     Used once per game when the game is initialized.
     '''
-    @marshal_with(GAME_FIELDS)
     def get(self):
         '''
         Generates random word, game UUID and creates a DB entry for a new game.
         '''
         word = chooseWord(loadWords())
         game_uuid = uuid.uuid4()
-        return Game.create(
-                game_uuid=game_uuid,
-                word=word,
-                word_length=len(word)
-            )
+        Game.create(
+            game_uuid=game_uuid,
+            word=word,
+            word_length=len(word)
+        )
+        output = jsonify(
+            word_length=len(word),
+            representation= ''.join('_' for _ in word)
+        )
+        resp = make_response(output)
+        resp.set_cookie('hangman_game_id', str(game_uuid))
+        return resp
 
 
 class Letter(Resource):
@@ -93,7 +99,7 @@ class Letter(Resource):
             'game_uuid',
             required=True,
             help='No game_identifier provided',
-            location=['form', 'json']
+            location=['cookie']
         )
         super().__init__()
 
