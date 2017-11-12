@@ -1,7 +1,15 @@
 import uuid
 import string
 
-from flask import jsonify, Blueprint, session, abort, make_response
+from flask import (
+    jsonify,
+    Blueprint,
+    session,
+    abort,
+    make_response,
+    redirect,
+    url_for
+)
 from flask.ext.restful import (
     Resource, Api, reqparse,
     inputs, fields, marshal,
@@ -17,13 +25,16 @@ class Representation(fields.Raw):
     def output(self, key, obj):
         return ''.join('_' for _ in obj.word)
 
+
 class RepresentationLetter(fields.Raw):
     def output(self, key, obj):
-        return obj.representation    
+        return obj.representation
+
 
 class AvailableLetters(fields.Raw):
     def output(self, key, obj):
         return obj.available_letters
+
 
 class Result(fields.Raw):
     def output(self, key, obj):
@@ -38,7 +49,8 @@ def valid_letter(value):
     elif len(user_input) > 1:
         raise ValueError('You provided more than 1 letter')
     elif user_input not in string.ascii_lowercase:
-        raise ValueError("You didn't provide a letter from %s" % string.ascii_lowercase)
+        raise ValueError("You didn't provide a letter from %s" %
+                         string.ascii_lowercase)
     return user_input
 
 
@@ -65,6 +77,7 @@ class Word(Resource):
     '''
     Used once per game when the game is initialized.
     '''
+
     def post(self):
         '''
         Generates random word, game UUID and creates a DB entry for a new game.
@@ -76,10 +89,10 @@ class Word(Resource):
             word=word,
             word_length=len(word)
         )
- 
+
         output = jsonify(
             word_length=len(word),
-            representation= ''.join('_' for _ in word),
+            representation=''.join('_' for _ in word),
             attempts_left=MAX_ATTEMPTS,
             available_letters=string.ascii_lowercase
         )
@@ -88,7 +101,6 @@ class Word(Resource):
         # Cookie expires in 24 hours
         resp.set_cookie('hangman_game_id', str(game_uuid), 86400)
         return resp
-
 
 
 class Letter(Resource):
@@ -109,28 +121,33 @@ class Letter(Resource):
             location=['cookies']
         )
         super().__init__()
-    
+
     def get_representation(self, letters_guessed, word):
         return ''.join(map(
-                lambda l: l if l in letters_guessed else '_',
-                word
-            )
+            lambda l: l if l in letters_guessed else '_',
+            word
+        )
         )
 
     def get_available_letters(self, letters_guessed, letter_guessed=None):
         if letter_guessed:
             letters_guessed.add(letter_guessed)
-        
+
         return ''.join(map(
-                lambda l: l if l not in letters_guessed else '',
-                string.ascii_lowercase
-            )
+            lambda l: l if l not in letters_guessed else '',
+            string.ascii_lowercase
         )
-    
+        )
+
     def get(self):
         args = self.reqparse.parse_args()
         # Get game object using uuid from the cookie
-        game = Game.get(Game.game_uuid == args['hangman_game_id'])
+        try:
+            game = Game.get(Game.game_uuid == args['hangman_game_id'])
+        except (Game.DoesNotExist):
+            resp = make_response(redirect(url_for('index')))
+            resp.set_cookie('hangman_game_id', '', expires=0)
+            return resp
         word = game.word
 
         letters = list(
@@ -141,11 +158,11 @@ class Letter(Resource):
         if not letters:
             return jsonify(
                 word_length=len(word),
-                representation= ''.join('_' for _ in word),
+                representation=''.join('_' for _ in word),
                 attempts_left=MAX_ATTEMPTS,
                 available_letters=string.ascii_lowercase
             )
-        else:        
+        else:
             letters_guessed = {l.letter for l in letters}
             last_letter = letters[0]
 
@@ -159,12 +176,16 @@ class Letter(Resource):
                 available_letters=available_letters
             )
 
-
     @marshal_with(LETTER_FIELDS)
     def post(self):
         args = self.reqparse.parse_args()
         # Get game object using uuid from the cookie
-        game = Game.get(Game.game_uuid == args['hangman_game_id'])
+        try:
+            game = Game.get(Game.game_uuid == args['hangman_game_id'])
+        except Game.DoesNotExist:
+            resp = make_response(redirect(url_for('index')))
+            resp.set_cookie('hangman_game_id', '', expires=0)
+            return resp
         letter_guessed = args['letter'].lower()
 
         def update_game_result(representation):
@@ -180,7 +201,7 @@ class Letter(Resource):
             return LetterGuessed.create(
                 game=game.id,
                 letter=letter_guessed,
-                #representation=representation,
+                # representation=representation,
                 attempts_left=attempts_left,
                 message=message
             )
@@ -190,7 +211,7 @@ class Letter(Resource):
                 lambda l: l if l in letters_guessed else '_',
                 word
             ))
-        
+
         def get_available_letters():
             letters_guessed.add(letter_guessed)
             return ''.join(map(
@@ -232,7 +253,8 @@ class Letter(Resource):
         update_game_result(representation)
 
         letter = create_letter(message)
-        letter.available_letters = self.get_available_letters(letters_guessed, letter_guessed)
+        letter.available_letters = self.get_available_letters(
+            letters_guessed, letter_guessed)
         letter.representation = representation
         return letter
 
