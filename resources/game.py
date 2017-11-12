@@ -1,6 +1,5 @@
 import uuid
 import string
-import pdb
 
 from flask import jsonify, Blueprint, session, abort
 from flask.ext.restful import (
@@ -9,9 +8,9 @@ from flask.ext.restful import (
     marshal_with
 )
 
-from models_1 import Game, LetterGuessed
+from models import Game, LetterGuessed
 
-from hangman import loadWords, chooseWord, getGuessedWord
+from hangman import loadWords, chooseWord
 
 
 class Representation(fields.Raw):
@@ -33,13 +32,14 @@ class Result(fields.Raw):
 
 
 def valid_letter(value):
-    if not value.strip():
+    user_input = value.lower().strip()
+    if not user_input:
         raise ValueError("You didn't provide a letter")
-    elif len(value.strip()) > 1:
+    elif len(user_input) > 1:
         raise ValueError('You provided more than 1 letter')
-    elif value.lower().strip() not in string.ascii_lowercase:
+    elif user_input not in string.ascii_lowercase:
         raise ValueError("You didn't provide a letter from %s" % string.ascii_lowercase)
-    return value.strip()
+    return user_input
 
 
 MAX_ATTEMPTS = 8
