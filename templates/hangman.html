@@ -11,10 +11,10 @@
     <h3>Guess a letter!</h3>
     <h2>Available letters are:</h2>
     <div id="available-letters"></div>
-    <div>
+    <form>
       <input type="text" maxlength="1" placeholder="Enter the letter">
-      <button >Submit</button>
-    </div>
+      <button type="submit">Submit</button>
+    </form>
   </div>
   <h2 id="try-again"></h2>
 
@@ -39,7 +39,7 @@
 
     function render(data) {
       wordElem.innerText = data.representation;
-      attemptsElem.innerText = data.attempts_left;
+      attemptsElem.innerText = "Attempts left: " + data.attempts_left;
       info.style.display = '';
       availableLetters.innerText = data.available_letters
       if (data.message) {
