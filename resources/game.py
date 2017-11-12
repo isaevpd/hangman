@@ -1,6 +1,6 @@
 import uuid
 import string
-
+from peewee import DataError
 from flask import (
     jsonify,
     Blueprint,
@@ -144,7 +144,7 @@ class Letter(Resource):
         # Get game object using uuid from the cookie
         try:
             game = Game.get(Game.game_uuid == args['hangman_game_id'])
-        except (Game.DoesNotExist):
+        except (Game.DoesNotExist, DataError):
             resp = make_response(redirect(url_for('index')))
             resp.set_cookie('hangman_game_id', '', expires=0)
             return resp
@@ -182,7 +182,7 @@ class Letter(Resource):
         # Get game object using uuid from the cookie
         try:
             game = Game.get(Game.game_uuid == args['hangman_game_id'])
-        except Game.DoesNotExist:
+        except (Game.DoesNotExist, DataError):
             resp = make_response(redirect(url_for('index')))
             resp.set_cookie('hangman_game_id', '', expires=0)
             return resp
