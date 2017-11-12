@@ -2,6 +2,10 @@ import urllib.parse as urlparse
 import os
 import psycopg2
 from peewee import *
+from hangman import loadWords, chooseWord
+import time
+from datetime import datetime
+
 
 URL = urlparse.urlparse(os.environ['DATABASE_URL'])
 DBNAME = URL.path[1:]
@@ -9,6 +13,7 @@ USER = URL.username
 PASSWORD = URL.password
 HOST = URL.hostname
 PORT = URL.port
+
 
 db = PostgresqlDatabase(
     DBNAME,
@@ -18,24 +23,40 @@ db = PostgresqlDatabase(
     port=PORT
 )
 
-class Result(Model):
+# db = PostgresqlDatabase(
+#     'local_db',
+#     user='germaniakovlev',
+#     password='',
+#     host='localhost',
+#     autorollback=True
+# )
+
+class Game(Model):
     '''
-    Creates Result table
     '''
+    game_uuid = UUIDField(unique=True)
     word = CharField(max_length=256)
-    attempts = IntegerField()
-    result = BooleanField()
+    word_length = IntegerField()
+    result = CharField(max_length=16, default='in_progress')
+    create_time = DateTimeField(default=datetime.utcnow)
+    update_time = DateTimeField(default=datetime.utcnow)
+    
 
     class Meta:
         database = db
+    
+    def save(self, *args, **kwargs):
+        self.update_time = datetime.utcnow()
+        return super(Game, self).save(*args, **kwargs)
 
-# Utility function
-def initialize():
-    db.connect()
-    db.create_tables([Result], safe=True)
+class LetterGuessed(Model):
+    '''
+    '''
+    game = ForeignKeyField(Game, related_name='letters')
+    letter = CharField(max_length=1)
+    attempts_left = IntegerField()
+    message = CharField(max_length=256)
+    create_time = DateTimeField(default=datetime.utcnow)
 
-def create_result(word, attempts, result):
-    '''
-    Creates an entry with the game result
-    '''
-    Result.create(word=word, attempts=attempts, result=result)
+    class Meta:
+        database = db

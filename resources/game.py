@@ -1,18 +1,62 @@
 import uuid
+import string
 
-from flask import jsonify, Blueprint, session
-from flask.ext.restful import (Resource, Api, reqparse,
-                               inputs, fields, marshal,
-                               marshal_with)
+from flask import jsonify, Blueprint, session, abort
+from flask.ext.restful import (
+    Resource, Api, reqparse,
+    inputs, fields, marshal,
+    marshal_with
+)
 
-from models_1 import Game, LetterGuessed
+from models import Game, LetterGuessed
 
-from hangman import loadWords, chooseWord, getGuessedWord
+from hangman import loadWords, chooseWord
+
+
+class Representation(fields.Raw):
+    def output(self, key, obj):
+        return ''.join('_' for _ in obj.word)
+
+class RepresentationLetter(fields.Raw):
+    def output(self, key, obj):
+        return obj.representation    
+
+class AvailableLetters(fields.Raw):
+    def output(self, key, obj):
+        return obj.available_letters
+
+class Result(fields.Raw):
+    def output(self, key, obj):
+        game_new = Game.get(Game.id == obj.game_id)
+        return game_new.result
+
+
+def valid_letter(value):
+    user_input = value.lower().strip()
+    if not user_input:
+        raise ValueError("You didn't provide a letter")
+    elif len(user_input) > 1:
+        raise ValueError('You provided more than 1 letter')
+    elif user_input not in string.ascii_lowercase:
+        raise ValueError("You didn't provide a letter from %s" % string.ascii_lowercase)
+    return user_input
+
+
+MAX_ATTEMPTS = 8
 
 GAME_FIELDS = {
-    'game_id': fields.Float,
     'word_length': fields.Integer,
-    'word': fields.String(),
+    'game_uuid': fields.String(),
+    'representation': Representation
+}
+
+LETTER_FIELDS = {
+    'letter': fields.String(),
+    'representation': RepresentationLetter,
+    'available_letters': AvailableLetters,
+    'attempts_left': fields.Integer(),
+    'result': Result,
+    'message': fields.String()
 }
 
 
@@ -20,49 +64,111 @@ class Word(Resource):
     '''
     Used once per game when the game is initialized.
     '''
+    @marshal_with(GAME_FIELDS)
     def get(self):
         '''
         Generates random word, game UUID and creates a DB entry for a new game.
         '''
         word = chooseWord(loadWords())
         game_uuid = uuid.uuid4()
-        presentation = ''
-        for letter in word:
-            presentation += '_'
-        Game.create_game(game_uuid, word, len(word))
-        return jsonify(word_length=len(word), presentation=presentation, game_uuid=game_uuid)
+        return Game.create(
+                game_uuid=game_uuid,
+                word=word,
+                word_length=len(word)
+            )
 
 
 class Letter(Resource):
     def __init__(self):
-        self.reqparse = reqparse.RequestParser()
+        self.reqparse = reqparse.RequestParser(bundle_errors=True)
         self.reqparse.add_argument(
             'letter',
             required=True,
-            help='Letter not provided',
+            type=valid_letter,
+            #help='Letter not provided',
             location=['form', 'json']
         )
 
         self.reqparse.add_argument(
-            'user_identifier',
+            'game_uuid',
             required=True,
-            help='No user_identifier provided',
+            help='No game_identifier provided',
             location=['form', 'json']
         )
         super().__init__()
 
+    @marshal_with(LETTER_FIELDS)
     def post(self):
         args = self.reqparse.parse_args()
-        game_id = Game.get(Game.user_identifier == args['user_identifier']).id
-        word = Game.get(Game.user_identifier == args['user_identifier']).word
-        print(game_id)
-        letters_used = ''
-        game_letters = LetterGuessed.select().where(LetterGuessed.game_id == game_id)
-        for i in game_letters:
-            letters_used += i.letter
-        print(letters_used)
-        guessed_word = getGuessedWord(word, letters_used)
-        print(guessed_word)
+        # Get game object using uuid from the cookie
+        game = Game.get(Game.game_uuid == args['game_uuid'])
+        letter_guessed = args['letter'].lower()
+
+        def update_game_result(representation):
+            if representation == game.word:
+                game.result = 'won'
+
+            elif attempts_left == 0:
+                game.result = 'lost'
+
+            game.save()
+
+        def create_letter(message):
+            return LetterGuessed.create(
+                game=game.id,
+                letter=letter_guessed,
+                #representation=representation,
+                attempts_left=attempts_left,
+                message=message
+            )
+
+        def get_representation(letters_guessed, word):
+            return ''.join(map(
+                lambda l: l if l in letters_guessed else '_',
+                word
+            ))
+        
+        def get_available_letters():
+            letters_guessed.add(letter_guessed)
+            return ''.join(map(
+                lambda l: l if l not in letters_guessed else '',
+                string.ascii_lowercase
+            ))
+
+        letters = game.letters.select()
+        letters_guessed = {l.letter for l in letters}
+
+        try:
+            last_letter = letters[-1]
+        except IndexError:
+            attempts_left = MAX_ATTEMPTS
+        else:
+            attempts_left = last_letter.attempts_left
+
+        if game.result in ('won', 'lost'):
+            return abort(
+                400, '{"message": "this game is already over"}'
+            )
+
+        elif letter_guessed in letters_guessed:
+            message = 'already_guessed'
+
+        elif letter_guessed in game.word:
+            letters_guessed.add(letter_guessed)
+            message = 'correct_guess'
+
+        else:
+            attempts_left = attempts_left - 1
+            message = 'incorrect_guess'
+
+        representation = get_representation(letters_guessed, game.word)
+        update_game_result(representation)
+
+        letter = create_letter(message)
+        letter.available_letters = get_available_letters()
+        letter.representation = representation
+        return letter
+
 
 game_api = Blueprint('resources.game', __name__)
 api = Api(game_api)
