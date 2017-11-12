@@ -65,7 +65,7 @@ class Word(Resource):
     '''
     Used once per game when the game is initialized.
     '''
-    def get(self):
+    def post(self):
         '''
         Generates random word, game UUID and creates a DB entry for a new game.
         '''
@@ -90,12 +90,13 @@ class Word(Resource):
         return resp
 
 
+
 class Letter(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser(bundle_errors=True)
         self.reqparse.add_argument(
             'letter',
-            required=True,
+            required=False,
             type=valid_letter,
             #help='Letter not provided',
             location=['form', 'json']
@@ -108,6 +109,56 @@ class Letter(Resource):
             location=['cookies']
         )
         super().__init__()
+    
+    def get_representation(self, letters_guessed, word):
+        return ''.join(map(
+                lambda l: l if l in letters_guessed else '_',
+                word
+            )
+        )
+
+    def get_available_letters(self, letters_guessed, letter_guessed=None):
+        if letter_guessed:
+            letters_guessed.add(letter_guessed)
+        
+        return ''.join(map(
+                lambda l: l if l not in letters_guessed else '',
+                string.ascii_lowercase
+            )
+        )
+    
+    def get(self):
+        args = self.reqparse.parse_args()
+        # Get game object using uuid from the cookie
+        game = Game.get(Game.game_uuid == args['hangman_game_id'])
+        word = game.word
+
+        letters = list(
+            game.letters.select().order_by(
+                LetterGuessed.create_time.desc()
+            )
+        )
+        if not letters:
+            return jsonify(
+                word_length=len(word),
+                representation= ''.join('_' for _ in word),
+                attempts_left=MAX_ATTEMPTS,
+                available_letters=string.ascii_lowercase
+            )
+        else:        
+            letters_guessed = {l.letter for l in letters}
+            last_letter = letters[0]
+
+            representation = self.get_representation(letters_guessed, word)
+            available_letters = self.get_available_letters(letters_guessed)
+
+            return jsonify(
+                word_length=len(word),
+                representation=representation,
+                attempts_left=last_letter.attempts_left,
+                available_letters=available_letters
+            )
+
 
     @marshal_with(LETTER_FIELDS)
     def post(self):
@@ -177,11 +228,11 @@ class Letter(Resource):
             attempts_left = attempts_left - 1
             message = 'incorrect_guess'
 
-        representation = get_representation(letters_guessed, game.word)
+        representation = self.get_representation(letters_guessed, game.word)
         update_game_result(representation)
 
         letter = create_letter(message)
-        letter.available_letters = get_available_letters()
+        letter.available_letters = self.get_available_letters(letters_guessed, letter_guessed)
         letter.representation = representation
         return letter
 
