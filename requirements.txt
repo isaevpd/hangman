@@ -11,6 +11,7 @@ itsdangerous==0.24
 Jinja2==2.9.6
 MarkupSafe==1.0
 mccabe==0.6.1
+mixpanel==4.3.2
 peewee==2.10.1
 pew==0.1.26
 pipenv==8.2.3

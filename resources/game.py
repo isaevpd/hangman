@@ -139,7 +139,7 @@ class Letter(Resource):
         letters_guessed = {l.letter for l in letters}
 
         try:
-            last_letter = letters[0]
+            last_letter = letters[-1]
         except IndexError:
             attempts_left = MAX_ATTEMPTS
         else:

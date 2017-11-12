@@ -7,29 +7,29 @@ import time
 from datetime import datetime
 
 
-# URL = urlparse.urlparse(os.environ['DATABASE_URL'])
-# DBNAME = URL.path[1:]
-# USER = URL.username
-# PASSWORD = URL.password
-# HOST = URL.hostname
-# PORT = URL.port
+URL = urlparse.urlparse(os.environ['DATABASE_URL'])
+DBNAME = URL.path[1:]
+USER = URL.username
+PASSWORD = URL.password
+HOST = URL.hostname
+PORT = URL.port
 
-
-# db = PostgresqlDatabase(
-#     DBNAME,
-#     user=USER,
-#     password=PASSWORD,
-#     host=HOST,
-#     port=PORT
-# )
 
 db = PostgresqlDatabase(
-    'local_db',
-    user='germaniakovlev',
-    password='',
-    host='localhost',
-    autorollback=True
+    DBNAME,
+    user=USER,
+    password=PASSWORD,
+    host=HOST,
+    port=PORT
 )
+
+# db = PostgresqlDatabase(
+#     'local_db',
+#     user='germaniakovlev',
+#     password='',
+#     host='localhost',
+#     autorollback=True
+# )
 
 class Game(Model):
     '''
