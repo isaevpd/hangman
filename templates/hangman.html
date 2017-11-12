@@ -3,34 +3,39 @@
 </head>
 
 <body>
-  <h1>Welcome to Hangman game!</h1>
-  <div></div>
-  <div id="attempts-left"></div>
-  <div id="info"></div>
-  <h3>Guess a letter!</h3>
-  <h2>Available letters are:</h2>
-  <div id="available-letters"></div>
-  <div>
-    <input type="text" maxlength="1" placeholder="Enter the letter">
-    <button >Submit</button>
+  <div id="main">
+    <h1>Welcome to Hangman game!</h1>
+    <div id="word-elem"></div>
+    <div id="attempts-left"></div>
+    <div id="info"></div>
+    <h3>Guess a letter!</h3>
+    <h2>Available letters are:</h2>
+    <div id="available-letters"></div>
+    <div>
+      <input type="text" maxlength="1" placeholder="Enter the letter">
+      <button >Submit</button>
+    </div>
   </div>
-  <div id="try-again"></div>
+  <h2 id="try-again"></h2>
 
   <script>
     const btn = document.querySelector('button');
     const letterInput = document.querySelector('input');
-    const wordElem = document.querySelector('div');
+    const wordElem = document.querySelector('div#word-elem');
     const attemptsElem = document.querySelector('div#attempts-left');
     const info = document.querySelector('div#info');
     const availableLetters = document.querySelector(
       "div#available-letters"
     )
-    const tryAgain = document.querySelector("div#try-again")
+    const tryAgain = document.querySelector("#try-again")
     const msg = {
       won: "You won!",
       lost: "You lost!"
     }
 
+    function hide(...elems) {
+      elems.forEach(el => el.style.display = "none");
+    }
 
     function render(data) {
       wordElem.innerText = data.representation;
@@ -42,21 +47,31 @@
         setTimeout(() => { info.style.display = 'none'; }, 3000);
       }
       if (data.result == "won" || data.result == "lost") {
-        tryAgain.innerText = msg[data.result] + " Would you like to try again? Refresh the page to start again"
+        hide(document.querySelector("div#main"))
+        document.cookie = "hangman_game_id" + '=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        tryAgain.innerText = msg[data.result] + " Would you like to try a different word? Refresh the page to start a new game"
       }
     }
 
-    fetch(
-      '/api/v1/word', {method: 'GET', credentials: 'same-origin'}
-    ).then(
-      res => res.json()
-    ).then(
-      json => {
-        render(
-          {representation: json.representation, attempts_left: 8}
-        )
-      }
-    );
+    if (document.cookie.indexOf("hangman_game_id") == -1) {
+      fetch(
+        '/api/v1/word', {method: 'POST', credentials: 'same-origin'}
+      ).then(
+        res => res.json()
+      ).then(
+        json => render(json)
+      );
+    }
+    else {
+      fetch(
+        '/api/v1/letter',
+        {method: 'GET', credentials: 'same-origin'}
+      ).then(
+        res => res.json()
+      ).then(
+        json => render(json)
+      )
+    }
 
     btn.addEventListener('click', event => {
         const letter = letterInput.value;
@@ -72,8 +87,23 @@
             body: JSON.stringify({letter})
           }
         ).then(
-          res => res.json()
-        ).then(json => render(json))
+          res => {
+            if (res.ok) return res.json()
+            else return Promise.reject(res.json())
+          }
+        ).then(
+          json => {
+            return render(json)
+          }
+        ).catch(
+          error => {
+            error.then(
+              data => {
+                console.log(data.message.hangman_game_id)
+              }
+            );
+          }
+        )
     });
 
   </script>
