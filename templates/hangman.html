@@ -1,0 +1,81 @@
+<!DOCTYPE HTML>
+<head>
+</head>
+
+<body>
+  <h1>Welcome to Hangman game!</h1>
+  <div></div>
+  <div id="attempts-left"></div>
+  <div id="info"></div>
+  <h3>Guess a letter!</h3>
+  <h2>Available letters are:</h2>
+  <div id="available-letters"></div>
+  <div>
+    <input type="text" maxlength="1" placeholder="Enter the letter">
+    <button >Submit</button>
+  </div>
+  <div id="try-again"></div>
+
+  <script>
+    const btn = document.querySelector('button');
+    const letterInput = document.querySelector('input');
+    const wordElem = document.querySelector('div');
+    const attemptsElem = document.querySelector('div#attempts-left');
+    const info = document.querySelector('div#info');
+    const availableLetters = document.querySelector(
+      "div#available-letters"
+    )
+    const tryAgain = document.querySelector("div#try-again")
+    const msg = {
+      won: "You won!",
+      lost: "You lost!"
+    }
+
+
+    function render(data) {
+      wordElem.innerText = data.representation;
+      attemptsElem.innerText = data.attempts_left;
+      info.style.display = '';
+      availableLetters.innerText = data.available_letters
+      if (data.message) {
+        info.innerText = data.message;
+        setTimeout(() => { info.style.display = 'none'; }, 3000);
+      }
+      if (data.result == "won" || data.result == "lost") {
+        tryAgain.innerText = msg[data.result] + " Would you like to try again? Refresh the page to start again"
+      }
+    }
+
+    fetch(
+      '/api/v1/word', {method: 'GET', credentials: 'same-origin'}
+    ).then(
+      res => res.json()
+    ).then(
+      json => {
+        render(
+          {representation: json.representation, attempts_left: 8}
+        )
+      }
+    );
+
+    btn.addEventListener('click', event => {
+        const letter = letterInput.value;
+        letterInput.value = '';
+        fetch(
+          '/api/v1/letter', {
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin',
+            method: 'POST',
+            body: JSON.stringify({letter})
+          }
+        ).then(
+          res => res.json()
+        ).then(json => render(json))
+    });
+
+  </script>
+
+</body>
