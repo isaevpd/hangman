@@ -5,6 +5,7 @@ from flask import (
     jsonify,
     Blueprint,
     session,
+    render_template,
     abort,
     make_response,
     redirect,
@@ -35,6 +36,10 @@ class AvailableLetters(fields.Raw):
     def output(self, key, obj):
         return obj.available_letters
 
+class WordLength(fields.Raw):
+    def output(self, key, obj):
+        return obj.word_length
+
 
 class Result(fields.Raw):
     def output(self, key, obj):
@@ -64,6 +69,7 @@ MAX_ATTEMPTS = 8
 # }
 
 LETTER_FIELDS = {
+    'word_length': WordLength,
     'letter': fields.String(),
     'representation': RepresentationLetter,
     'available_letters': AvailableLetters,
@@ -145,7 +151,7 @@ class Letter(Resource):
         try:
             game = Game.get(Game.game_uuid == args['hangman_game_id'])
         except (Game.DoesNotExist, DataError):
-            resp = make_response(redirect(url_for('index')))
+            resp = make_response(render_template('index.html'))
             resp.set_cookie('hangman_game_id', '', expires=0)
             return resp
         word = game.word
@@ -186,10 +192,12 @@ class Letter(Resource):
             resp = make_response(redirect(url_for('index')))
             resp.set_cookie('hangman_game_id', '', expires=0)
             return resp
+
+        word = game.word
         letter_guessed = args['letter'].lower()
 
         def update_game_result(representation):
-            if representation == game.word:
+            if representation == word:
                 game.result = 'won'
 
             elif attempts_left == 0:
@@ -205,19 +213,6 @@ class Letter(Resource):
                 attempts_left=attempts_left,
                 message=message
             )
-
-        def get_representation(letters_guessed, word):
-            return ''.join(map(
-                lambda l: l if l in letters_guessed else '_',
-                word
-            ))
-
-        def get_available_letters():
-            letters_guessed.add(letter_guessed)
-            return ''.join(map(
-                lambda l: l if l not in letters_guessed else '',
-                string.ascii_lowercase
-            ))
 
         letters = list(
             game.letters.select().order_by(
@@ -241,7 +236,7 @@ class Letter(Resource):
         elif letter_guessed in letters_guessed:
             message = 'already_guessed'
 
-        elif letter_guessed in game.word:
+        elif letter_guessed in word:
             letters_guessed.add(letter_guessed)
             message = 'correct_guess'
 
@@ -249,13 +244,14 @@ class Letter(Resource):
             attempts_left = attempts_left - 1
             message = 'incorrect_guess'
 
-        representation = self.get_representation(letters_guessed, game.word)
+        representation = self.get_representation(letters_guessed, word)
         update_game_result(representation)
 
         letter = create_letter(message)
         letter.available_letters = self.get_available_letters(
             letters_guessed, letter_guessed)
         letter.representation = representation
+        letter.word_length = len(word)
         return letter
 
 
