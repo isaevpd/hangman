@@ -1,20 +1,39 @@
 <!DOCTYPE HTML>
+
 <head>
     <title>Welcome to Hangman!</title>
+    <link href='//fonts.googleapis.com/css?family=Roboto:400,300,600' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="//cdn.rawgit.com/necolas/normalize.css/master/normalize.css">
+    <link rel="stylesheet" href="//cdn.rawgit.com/milligram/milligram/master/dist/milligram.min.css">
 </head>
 
 <body>
-    <h1>Welcome to Hangman game!</h1>
+    <div class="container">
+        <div class="row">
+            <h1>Welcome to Hangman game!</h1>
+        </div>
+        <div class="row">
+            <h2>Instructions:</h2>
+        </div>
 
-    <h2>Rules</h2>
-    <p>
-        <ul>
-            <li>Computer randomly chooses a secret word</li>
-            <li>You have 8 attempts to guess the word</li>
-            <li>Every incorrect guess reduces attempts by 1</li>
-            <li>If you submit a letter that you've already tried, attempts are not reduced</li>
-        </ul>
-    </p>
-    <h3>Ready to start?</h3>
-    <button onclick="location.href = '/hangman';">Yes</button>
+        <div class="row">
+            <p>
+                <ul>
+                    <li>Computer randomly chooses a secret word</li>
+                    <li>You have 8 attempts to guess the word</li>
+                    <li>Every incorrect guess reduces attempts by 1</li>
+                    <li>If you submit a letter that you've already tried, attempts are not reduced</li>
+                </ul>
+            </p>
+        </div>
+
+        <div class="row">
+            <h3>Ready to start?</h3>
+        </div>
+        <div class="row">
+            <button class="button" onclick="location.href = '/hangman';">Yes</button>
+        </div>
+
+    </div>
+    </div>
 </body>

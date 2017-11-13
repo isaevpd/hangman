@@ -1,23 +1,50 @@
 <!DOCTYPE HTML>
+
 <head>
+  <title>Hangman game is live!</title>
+  <link href='//fonts.googleapis.com/css?family=Roboto:400,300,600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="//cdn.rawgit.com/necolas/normalize.css/master/normalize.css">
+  <link rel="stylesheet" href="//cdn.rawgit.com/milligram/milligram/master/dist/milligram.min.css">
 </head>
 
 <body>
-  <div id="main">
-    <h1>Welcome to Hangman game!</h1>
-    <div id="word-elem"></div>
-    <div id="word-len"></div>
-    <div id="attempts-left"></div>
-    <div id="info"></div>
-    <h3>Guess a letter!</h3>
-    <h2>Available letters are:</h2>
-    <div id="available-letters"></div>
-    <form>
-      <input type="text" maxlength="1" placeholder="Enter the letter">
-      <button type="submit">Submit</button>
-    </form>
+  <div class="container">
+    <div id="main">
+      <div class="row">
+        <h1>Welcome to Hangman game!</h1>
+      </div>
+      <div class="row">
+        <div id="word-elem"></div>
+      </div>
+      <div class="row">
+        <div id="word-len"></div>
+      </div>
+      <div class="row">
+        <div id="attempts-left"></div>
+      </div>
+      <div class="row">
+        <div id="info"></div>
+      </div>
+      <div class="row">
+        <h3>Available letters are:</h3>
+      </div>
+      <div class="row">
+        <div id="available-letters"></div>
+      </div>
+      <div class="row">
+        <h3>Guess a letter!</h3>
+      </div>
+      <div class="row">
+        <form>
+          <input type="text" maxlength="1" placeholder="Enter the letter">
+          <button class="button-primary" type="submit">Submit</button>
+        </form>
+      </div>
+    </div>
+    <div class="row">
+      <h2 id="try-again"></h2>
+    </div>
   </div>
-  <h2 id="try-again"></h2>
 
   <script>
     const form = document.querySelector('form');
@@ -58,55 +85,55 @@
 
     if (document.cookie.indexOf("hangman_game_id") == -1) {
       fetch(
-        '/api/v1/word', {method: 'POST', credentials: 'same-origin'}
+        '/api/v1/word', { method: 'POST', credentials: 'same-origin' }
       ).then(
         res => res.json()
-      ).then(
+        ).then(
         json => render(json)
-      );
+        );
     }
     else {
       fetch(
         '/api/v1/letter',
-        {method: 'GET', credentials: 'same-origin'}
+        { method: 'GET', credentials: 'same-origin' }
       ).then(
         res => res.json()
-      ).then(
+        ).then(
         json => render(json)
-      )
+        )
     }
 
     form.addEventListener('submit', event => {
-        event.preventDefault()
-        const letter = letterInput.value;
-        letterInput.value = '';
-        fetch(
-          '/api/v1/letter', {
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json'
-            },
-            credentials: 'same-origin',
-            method: 'POST',
-            body: JSON.stringify({letter})
-          }
+      event.preventDefault()
+      const letter = letterInput.value;
+      letterInput.value = '';
+      fetch(
+        '/api/v1/letter', {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          credentials: 'same-origin',
+          method: 'POST',
+          body: JSON.stringify({ letter })
+        }
+      ).then(
+        res => {
+          if (res.ok) return res.json()
+          else return Promise.reject(res.json())
+        }
         ).then(
-          res => {
-            if (res.ok) return res.json()
-            else return Promise.reject(res.json())
-          }
-        ).then(
-          json => {
-            return render(json)
-          }
+        json => {
+          return render(json)
+        }
         ).catch(
-          error => {
-            error.then(
-              data => {
-                console.log(data.message.hangman_game_id)
-              }
-            );
-          }
+        error => {
+          error.then(
+            data => {
+              console.log(data.message.hangman_game_id)
+            }
+          );
+        }
         )
     });
 
