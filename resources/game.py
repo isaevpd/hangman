@@ -36,15 +36,15 @@ class AvailableLetters(fields.Raw):
     def output(self, key, obj):
         return obj.available_letters
 
-class WordLength(fields.Raw):
-    def output(self, key, obj):
-        return obj.word_length
+# class WordLength(fields.Raw):
+#     def output(self, key, obj):
+#         return obj.word_length
 
 
-class Result(fields.Raw):
-    def output(self, key, obj):
-        game_new = Game.get(Game.id == obj.game_id)
-        return game_new.result
+# class Result(fields.Raw):
+#     def output(self, key, obj):
+#         game_new = Game.get(Game.id == obj.game_id)
+#         return game_new.result
 
 
 def valid_letter(value):
@@ -61,23 +61,15 @@ def valid_letter(value):
 
 MAX_ATTEMPTS = 8
 
-# Not using @marshal_with for Word.GET
-# GAME_FIELDS = {
-#     'word_length': fields.Integer,
-#     'game_uuid': fields.String(),
-#     'representation': Representation
+# LETTER_FIELDS = {
+#     'word_length': WordLength,
+#     'letter': fields.String(),
+#     'representation': RepresentationLetter,
+#     'available_letters': AvailableLetters,
+#     'attempts_left': fields.Integer(),
+#     'result': Result,
+#     'message': fields.String()
 # }
-
-LETTER_FIELDS = {
-    'word_length': WordLength,
-    'letter': fields.String(),
-    'representation': RepresentationLetter,
-    'available_letters': AvailableLetters,
-    'attempts_left': fields.Integer(),
-    'result': Result,
-    'message': fields.String()
-}
-
 
 class Word(Resource):
     '''
@@ -151,11 +143,11 @@ class Letter(Resource):
         try:
             game = Game.get(Game.game_uuid == args['hangman_game_id'])
         except (Game.DoesNotExist, DataError):
-            resp = make_response(render_template('index.html'))
+            resp = make_response(redirect(url_for('index')))
             resp.set_cookie('hangman_game_id', '', expires=0)
             return resp
+        
         word = game.word
-
         letters = list(
             game.letters.select().order_by(
                 LetterGuessed.create_time.desc()
@@ -182,7 +174,6 @@ class Letter(Resource):
                 available_letters=available_letters
             )
 
-    @marshal_with(LETTER_FIELDS)
     def post(self):
         args = self.reqparse.parse_args()
         # Get game object using uuid from the cookie
@@ -252,8 +243,15 @@ class Letter(Resource):
             letters_guessed, letter_guessed)
         letter.representation = representation
         letter.word_length = len(word)
-        return letter
-
+        return jsonify(
+            word_length=len(word),
+            letter=letter.letter,
+            representation=representation,
+            available_letters=letter.available_letters,
+            attempts_left=attempts_left,
+            result=Game.get(Game.game_uuid == args['hangman_game_id']).result,
+            message=message
+        )
 
 game_api = Blueprint('resources.game', __name__)
 api = Api(game_api)
