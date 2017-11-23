@@ -91,9 +91,9 @@
         '/api/v1/word', { method: 'POST', credentials: 'same-origin' }
       ).then(
         res => res.json()
-        ).then(
+      ).then(
         json => render(json)
-        );
+      );
     }
     else {
       fetch(
@@ -101,9 +101,9 @@
         { method: 'GET', credentials: 'same-origin' }
       ).then(
         res => res.json()
-        ).then(
+      ).then(
         json => render(json)
-        )
+      )
     }
 
     form.addEventListener('submit', event => {
@@ -118,25 +118,24 @@
           },
           credentials: 'same-origin',
           method: 'POST',
-          body: JSON.stringify({ letter })
+          body: JSON.stringify({ letter }),
         }
       ).then(
         res => {
-          if (res.ok) return res.json()
+          if (res.redirected) {
+            window.location.replace(res.url);
+          }
+          else if (res.ok) return res.json()
           else return Promise.reject(res.json())
         }
         ).then(
-        json => {
-          return render(json)
+          json => {
+            return render(json)
         }
         ).catch(
-        error => {
-          error.then(
-            data => {
-              console.log(data.message.hangman_game_id)
-            }
-          );
-        }
+          error => {
+           return Promise.resolve(); 
+          }
         )
     });
 
