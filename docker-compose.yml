@@ -1,0 +1,13 @@
+version: '2'
+services:
+  hangman:
+    build: .
+    ports:
+      - "5000:5000"
+    depends_on:
+      - database
+  database:
+    image: postgres:9
+    env_file: .env
+    expose:
+      - 5432
