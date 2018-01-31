@@ -17,25 +17,24 @@
         <h1>Welcome to Hangman game!</h1>
       </div>
       <div class="row">
-        <div id="word-elem"></div>
-      </div>
-      <div class="row">
         <div id="word-len"></div>
       </div>
       <div class="row">
         <div id="attempts-left"></div>
       </div>
       <div class="row">
-        <div id="info"></div>
-      </div>
-      <div class="row">
-        <h3>Available letters are:</h3>
-      </div>
-      <div class="row">
+        <div>Available letters are:</div>
+        &nbsp
         <div id="available-letters"></div>
       </div>
       <div class="row">
-        <h3>Guess a letter!</h3>
+        <div>Guess a letter!</div>
+      </div>
+      <div class="row">
+        <div id="word-elem" style="font-size:150%"></div>
+      </div>
+      <div class="row">
+        <div id="info" style="visibility:hidden; font-size: 150%">placeholder</div>
       </div>
       <div class="row">
         <form>
@@ -65,19 +64,37 @@
       lost: "You lost!"
     }
 
+    let showMessageTimer;
+
     function hide(...elems) {
       elems.forEach(el => el.style.display = "none");
     }
 
+    function toHumanReadable(s) {
+      s = s.replace("_", " ");
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+
+    function setMessageStyle(elem) {
+      elem.style.visibility = "visible";
+      options = { 
+        "Correct guess": "green",
+        "Already guessed": "blue",
+        "Incorrect guess": "red"
+      }
+      elem.style.color = options[elem.innerText]
+    }
+
     function render(data) {
+      clearTimeout(showMessageTimer);
       wordElem.innerText = data.representation.split("").join(" ");
-      wordLen.innerText = "Secret word is " + data.word_length + " letters long."
+      wordLen.innerText = "Secret word is " + data.word_length + " letters long.";
       attemptsElem.innerText = "Attempts left: " + data.attempts_left;
-      info.style.display = '';
-      availableLetters.innerText = data.available_letters
+      availableLetters.innerText = data.available_letters;
       if (data.message) {
-        info.innerText = data.message;
-        setTimeout(() => { info.style.display = 'none'; }, 3000);
+        info.innerText = toHumanReadable(data.message);
+        setMessageStyle(info)
+        showMessageTimer = setTimeout(() => { info.style.visibility = "hidden"; }, 3000);
       }
       if (data.result == "won" || data.result == "lost") {
         hide(document.querySelector("div#main"))
