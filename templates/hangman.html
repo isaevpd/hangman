@@ -23,8 +23,7 @@
         <div id="attempts-left"></div>
       </div>
       <div class="row">
-        <div>Available letters are:</div>
-        &nbsp
+        <div>Available letters are:&nbsp</div>
         <div id="available-letters"></div>
       </div>
       <div class="row">
@@ -86,6 +85,7 @@
     }
 
     function render(data) {
+      letterInput.focus();
       clearTimeout(showMessageTimer);
       wordElem.innerText = data.representation.split("").join(" ");
       wordLen.innerText = "Secret word is " + data.word_length + " letters long.";
