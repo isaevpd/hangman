@@ -51,7 +51,13 @@
       </div>
     </div>
     <div class="row">
-      <h2 id="try-again"></h2>
+      <h3 id="result" style="display:none"> The original word was:</h3>
+    </div>
+    <div class="row">
+      <h2 id="original-word"></h2>
+    </div>
+    <div class="row">
+      <h3 id="try-again" style="display:none">Would you like to try a different word? Refresh the page to start a new game.</h3>
     </div>
   </div>
 
@@ -66,7 +72,9 @@
     const availableLetters = document.querySelector(
       "div#available-letters"
     )
-    const tryAgain = document.querySelector("#try-again")
+    const result = document.querySelector("h3#result");
+    const originalWordEl = document.querySelector("h2#original-word");
+    const tryAgain = document.querySelector("h3#try-again");
     const msg = {
       won: "You won!",
       lost: "You lost!"
@@ -97,40 +105,44 @@
         "Already guessed": "blue",
         "Incorrect guess": "red"
       }
-      elem.style.color = options[elem.innerText]
+      elem.style.color = options[elem.textContent]
     }
 
     function render(data) {
       letterInput.focus();
       clearTimeout(showMessageTimer);
 
-      wordElem.innerText = data.representation.split("").join(" ");
+      wordElem.textContent = data.representation.split("").join(" ");
 
-      wordLen.innerText = "Secret word is " + data.word_length + " letters long.";
+      wordLen.textContent = "Secret word is " + data.word_length + " letters long.";
 
-      attemptsElem.innerText = "Attempts left: " + data.attempts_left;
+      attemptsElem.textContent = "Attempts left: " + data.attempts_left;
 
       const lettersUsed = getLettersUsed(data.available_letters);
       if (lettersUsed !== "") {
-        lettersUsedEl.innerText = lettersUsed;
+        lettersUsedEl.textContent = lettersUsed;
       }
 
       const lettersLeft = data.available_letters.toUpperCase().split("").join(" ");
-      availableLetters.innerText = lettersLeft;
+      availableLetters.textContent = lettersLeft;
 
       if (data.message) {
-        info.innerText = toHumanReadable(data.message);
+        info.textContent = toHumanReadable(data.message);
         setMessageStyle(info)
         showMessageTimer = setTimeout(() => { info.style.visibility = "hidden"; }, 3000);
       }
       if (data.result == "won" || data.result == "lost") {
         hide(document.querySelector("div#main"))
         document.cookie = "hangman_game_id" + '=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-        tryAgain.innerText = msg[data.result] + " Would you like to try a different word? Refresh the page to start a new game"
+        result.textContent = msg[data.result] + result.textContent;
+        result.style.display = "";
+        originalWordEl.textContent = data.original_word;
+        tryAgain.style.display = "";
+
       }
     }
 
-    if (document.cookie.indexOf("hangman_game_id") == -1) {
+    if (document.cookie.indexOf("hangman_game_id") === -1) {
       fetch(
         '/api/v1/word', { method: 'POST', credentials: 'same-origin' }
       ).then(
