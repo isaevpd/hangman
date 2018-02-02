@@ -156,6 +156,8 @@ class Letter(Resource):
 
             game.save()
 
+            return game.result
+
         def create_letter(message):
             return LetterGuessed.create(
                 game=game.id,
@@ -195,21 +197,30 @@ class Letter(Resource):
             message = 'incorrect_guess'
 
         representation = self.get_representation(letters_guessed, word)
-        update_game_result(representation)
+        result = update_game_result(representation)
 
         letter = create_letter(message)
         letter.available_letters = self.get_available_letters(
             letters_guessed, letter_guessed)
         letter.representation = representation
         letter.word_length = len(word)
+
+        # send back the original word if game is over
+        result = game.result
+        if result in ('won', 'lost'):
+            original_word = game.word
+        else:
+            original_word = None
+
         return jsonify(
             word_length=len(word),
             letter=letter.letter,
             representation=representation,
             available_letters=letter.available_letters,
             attempts_left=attempts_left,
-            result=game.result,
-            message=message
+            result=result,
+            message=message,
+            original_word=original_word
         )
 
 
