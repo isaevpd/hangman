@@ -1,50 +1,20 @@
 import uuid
 import string
-from peewee import DataError
+
 from flask import (
     jsonify,
     Blueprint,
-    session,
-    render_template,
     abort,
     make_response,
     redirect,
     url_for
 )
 from flask.ext.restful import (
-    Resource, Api, reqparse,
-    inputs, fields, marshal,
-    marshal_with
+    Resource, Api, reqparse
 )
-
-from models import Game, LetterGuessed
-
 from hangman import loadWords, chooseWord
-
-
-class Representation(fields.Raw):
-    def output(self, key, obj):
-        return ''.join('_' for _ in obj.word)
-
-
-class RepresentationLetter(fields.Raw):
-    def output(self, key, obj):
-        return obj.representation
-
-
-class AvailableLetters(fields.Raw):
-    def output(self, key, obj):
-        return obj.available_letters
-
-# class WordLength(fields.Raw):
-#     def output(self, key, obj):
-#         return obj.word_length
-
-
-# class Result(fields.Raw):
-#     def output(self, key, obj):
-#         game_new = Game.get(Game.id == obj.game_id)
-#         return game_new.result
+from models import Game, LetterGuessed
+from peewee import DataError
 
 
 def valid_letter(value):
@@ -61,15 +31,6 @@ def valid_letter(value):
 
 MAX_ATTEMPTS = 8
 
-# LETTER_FIELDS = {
-#     'word_length': WordLength,
-#     'letter': fields.String(),
-#     'representation': RepresentationLetter,
-#     'available_letters': AvailableLetters,
-#     'attempts_left': fields.Integer(),
-#     'result': Result,
-#     'message': fields.String()
-# }
 
 class Word(Resource):
     '''
@@ -90,7 +51,7 @@ class Word(Resource):
 
         output = jsonify(
             word_length=len(word),
-            representation=''.join('_' for _ in word),
+            representation='_' * len(word),
             attempts_left=MAX_ATTEMPTS,
             available_letters=string.ascii_lowercase
         )
@@ -108,7 +69,7 @@ class Letter(Resource):
             'letter',
             required=False,
             type=valid_letter,
-            #help='Letter not provided',
+            help='Letter not provided',
             location=['form', 'json']
         )
 
@@ -124,8 +85,7 @@ class Letter(Resource):
         return ''.join(map(
             lambda l: l if l in letters_guessed else '_',
             word
-        )
-        )
+        ))
 
     def get_available_letters(self, letters_guessed, letter_guessed=None):
         if letter_guessed:
@@ -146,7 +106,7 @@ class Letter(Resource):
             resp = make_response(redirect(url_for('index')))
             resp.set_cookie('hangman_game_id', '', expires=0)
             return resp
-        
+
         word = game.word
         letters = list(
             game.letters.select().order_by(
@@ -200,7 +160,6 @@ class Letter(Resource):
             return LetterGuessed.create(
                 game=game.id,
                 letter=letter_guessed,
-                # representation=representation,
                 attempts_left=attempts_left,
                 message=message
             )
@@ -249,9 +208,10 @@ class Letter(Resource):
             representation=representation,
             available_letters=letter.available_letters,
             attempts_left=attempts_left,
-            result=Game.get(Game.game_uuid == args['hangman_game_id']).result,
+            result=game.result,
             message=message
         )
+
 
 game_api = Blueprint('resources.game', __name__)
 api = Api(game_api)
