@@ -22,4 +22,4 @@ def page_not_found(e):
     return 'Page not found'
 
 if __name__ == '__main__':
-     app.debug = True
+    app.debug = True
