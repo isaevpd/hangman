@@ -9,7 +9,7 @@ const lettersUsedEl = document.querySelector("div#letters-used");
 const availableLetters = document.querySelector(
   "div#available-letters"
 )
-const result = document.querySelector("h3#result");
+const status = document.querySelector("h3#status");
 const originalWordEl = document.querySelector("h2#original-word");
 const tryAgain = document.querySelector("h3#try-again");
 const msg = {
@@ -62,17 +62,18 @@ function render(data) {
 
   const lettersLeft = data.available_letters.toUpperCase().split("").join(" ");
   availableLetters.textContent = lettersLeft;
+  console.log(data);
 
   if (data.message) {
     info.textContent = toHumanReadable(data.message);
     setMessageStyle(info)
     showMessageTimer = setTimeout(() => { info.style.visibility = "hidden"; }, 3000);
   }
-  if (data.result == "won" || data.result == "lost") {
+  if (data.status == "won" || data.status == "lost") {
     hide(document.querySelector("div#main"))
     document.cookie = "hangman_game_id" + '=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    result.textContent = msg[data.result] + result.textContent;
-    result.style.display = "";
+    status.textContent = msg[data.status] + status.textContent;
+    status.style.display = "";
     originalWordEl.textContent = data.original_word;
     tryAgain.style.display = "";
 
