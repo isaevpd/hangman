@@ -10,7 +10,7 @@ from mongoengine.fields import (
     EmbeddedDocumentListField
 )
 
-MIN_WORD_LENGTH = 5
+MIN_WORD_LENGTH = 1
 MAX_WORD_LENGTH = 32
 MAX_ATTEMPTS = 8
 
@@ -44,6 +44,11 @@ class Game(Document):
 
     letters = EmbeddedDocumentListField('LetterGuessed')
 
+    def __str__(self):
+        return (
+            f'{self.uuid}->{self.word}->{self.status}'
+        )
+
     @property
     def word_length(self):
         return len(self.word)
@@ -59,3 +64,8 @@ class LetterGuessed(EmbeddedDocument):
         min_value=0, max_value=MAX_ATTEMPTS, required=True
     )
     message = StringField(max_length=128, required=True)
+
+    def __str__(self):
+        return (
+            f'{self.letter}->{self.attempts_left}->{self.message}'
+        )
