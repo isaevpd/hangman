@@ -1,6 +1,0 @@
-{
-    "user": "test_user",
-    "password": "test_password",
-    "host": "localhost",
-    "autorollback": true
-}

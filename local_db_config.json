@@ -1,9 +1,0 @@
-{
-    "hangman": {
-        "user": "postgres",
-        "password": "hangman_password",
-        "host": "localhost",
-        "autorollback": true
-    }
-
-}
