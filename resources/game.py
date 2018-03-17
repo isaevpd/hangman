@@ -32,14 +32,14 @@ MAX_ATTEMPTS = 8
 
 
 class Word(Resource):
-    '''
+    """
     Used once per game when the game is initialized.
-    '''
+    """
 
     def post(self):
-        '''
+        """
         Generates random word, game UUID and creates a DB entry for a new game.
-        '''
+        """
         word = chooseWord(loadWords())
         game = Game.objects.create(
             word=word
@@ -128,7 +128,7 @@ class Letter(Resource):
         args = self.reqparse.parse_args()
         try:
             game = Game.objects.get(uuid=args['hangman_game_id'])
-        except (Game.DoesNotExist):
+        except (Game.DoesNotExist, ValueError):
             resp = make_response(redirect(url_for('index')))
             resp.set_cookie('hangman_game_id', '', expires=0)
             return resp
