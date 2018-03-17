@@ -16,11 +16,6 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/game_over')
-def game_over():
-    return render_template('game_over.html')
-
-
 @app.errorhandler(404)
 def page_not_found(e):
     return 'Page not found'
