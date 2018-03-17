@@ -9,12 +9,11 @@ from flask import (
     redirect,
     url_for
 )
-from flask.ext.restful import (
+from flask_restful import (
     Resource, Api, reqparse
 )
 from hangman import loadWords, chooseWord
 from models import Game, LetterGuessed
-from peewee import DataError
 
 
 def valid_letter(value):
@@ -102,7 +101,7 @@ class Letter(Resource):
         # Get game object using uuid from the cookie
         try:
             game = Game.get(Game.game_uuid == args['hangman_game_id'])
-        except (Game.DoesNotExist, DataError):
+        except (Game.DoesNotExist):
             resp = make_response(redirect(url_for('index')))
             resp.set_cookie('hangman_game_id', '', expires=0)
             return resp

@@ -1,7 +1,6 @@
 import unittest
 
 from app import app
-from models import db, Game, LetterGuessed
 import json
 
 

@@ -24,7 +24,3 @@ def game_over():
 @app.errorhandler(404)
 def page_not_found(e):
     return 'Page not found'
-
-
-if __name__ == '__main__':
-    app.debug = True
