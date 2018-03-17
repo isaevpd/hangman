@@ -1,4 +1,3 @@
-import uuid
 import string
 
 from flask import (
@@ -23,8 +22,9 @@ def valid_letter(value):
     elif len(user_input) > 1:
         raise ValueError('You provided more than 1 letter')
     elif user_input not in string.ascii_lowercase:
-        raise ValueError("You didn't provide a letter from %s" %
-                         string.ascii_lowercase)
+        raise ValueError(
+            f"You didn't provide a letter from {string.ascii_lowercase}"
+        )
     return user_input
 
 
@@ -41,11 +41,8 @@ class Word(Resource):
         Generates random word, game UUID and creates a DB entry for a new game.
         '''
         word = chooseWord(loadWords())
-        game_uuid = uuid.uuid4()
-        Game.create(
-            game_uuid=game_uuid,
-            word=word,
-            word_length=len(word)
+        game = Game.objects.create(
+            word=word
         )
 
         output = jsonify(
@@ -57,7 +54,7 @@ class Word(Resource):
 
         resp = make_response(output)
         # Cookie expires in 24 hours
-        resp.set_cookie('hangman_game_id', str(game_uuid), 86400)
+        resp.set_cookie('hangman_game_id', str(game.uuid), 86400)
         return resp
 
 
@@ -93,41 +90,35 @@ class Letter(Resource):
         return ''.join(map(
             lambda l: l if l not in letters_guessed else '',
             string.ascii_lowercase
-        )
-        )
+        ))
 
     def get(self):
         args = self.reqparse.parse_args()
-        # Get game object using uuid from the cookie
         try:
-            game = Game.get(Game.game_uuid == args['hangman_game_id'])
-        except (Game.DoesNotExist):
+            game = Game.objects.get(uuid=args['hangman_game_id'])
+        except (Game.DoesNotExist, ValueError):
             resp = make_response(redirect(url_for('index')))
             resp.set_cookie('hangman_game_id', '', expires=0)
             return resp
 
         word = game.word
-        letters = list(
-            game.letters.select().order_by(
-                LetterGuessed.create_time.desc()
-            )
-        )
-        if not letters:
+        word_length = game.word_length
+        if not game.letters:
             return jsonify(
-                word_length=len(word),
+                word_length=word_length,
                 representation=''.join('_' for _ in word),
                 attempts_left=MAX_ATTEMPTS,
                 available_letters=string.ascii_lowercase
             )
         else:
-            letters_guessed = {l.letter for l in letters}
-            last_letter = letters[0]
+            letters_guessed = {l.letter for l in game.letters}
+            last_letter = game.letters[-1]
 
             representation = self.get_representation(letters_guessed, word)
             available_letters = self.get_available_letters(letters_guessed)
 
             return jsonify(
-                word_length=len(word),
+                word_length=word_length,
                 representation=representation,
                 attempts_left=last_letter.attempts_left,
                 available_letters=available_letters
@@ -135,10 +126,9 @@ class Letter(Resource):
 
     def post(self):
         args = self.reqparse.parse_args()
-        # Get game object using uuid from the cookie
         try:
-            game = Game.get(Game.game_uuid == args['hangman_game_id'])
-        except (Game.DoesNotExist, DataError):
+            game = Game.objects.get(uuid=args['hangman_game_id'])
+        except (Game.DoesNotExist):
             resp = make_response(redirect(url_for('index')))
             resp.set_cookie('hangman_game_id', '', expires=0)
             return resp
@@ -146,40 +136,37 @@ class Letter(Resource):
         word = game.word
         letter_guessed = args['letter'].lower()
 
-        def update_game_result(representation):
+        def update_game_status(representation):
             if representation == word:
-                game.result = 'won'
+                game.status = 'won'
 
             elif attempts_left == 0:
-                game.result = 'lost'
+                game.status = 'lost'
 
             game.save()
 
-            return game.result
+            return game.status
 
         def create_letter(message):
-            return LetterGuessed.create(
-                game=game.id,
+            letter = LetterGuessed(
                 letter=letter_guessed,
                 attempts_left=attempts_left,
                 message=message
             )
+            game.letters.append(letter)
+            game.save()
+            return letter
 
-        letters = list(
-            game.letters.select().order_by(
-                LetterGuessed.create_time.desc()
-            )
-        )
-        letters_guessed = {l.letter for l in letters}
+        letters_guessed = {l.letter for l in game.letters}
 
         try:
-            last_letter = letters[0]
+            last_letter = game.letters[-1]
         except IndexError:
             attempts_left = MAX_ATTEMPTS
         else:
             attempts_left = last_letter.attempts_left
 
-        if game.result in ('won', 'lost'):
+        if game.status in ('won', 'lost'):
             return abort(
                 400, '{"message": "this game is already over"}'
             )
@@ -196,7 +183,7 @@ class Letter(Resource):
             message = 'incorrect_guess'
 
         representation = self.get_representation(letters_guessed, word)
-        result = update_game_result(representation)
+        status = update_game_status(representation)
 
         letter = create_letter(message)
         letter.available_letters = self.get_available_letters(
@@ -205,8 +192,7 @@ class Letter(Resource):
         letter.word_length = len(word)
 
         # send back the original word if game is over
-        result = game.result
-        if result in ('won', 'lost'):
+        if status in ('won', 'lost'):
             original_word = game.word
         else:
             original_word = None
@@ -217,7 +203,7 @@ class Letter(Resource):
             representation=representation,
             available_letters=letter.available_letters,
             attempts_left=attempts_left,
-            result=result,
+            status=status,
             message=message,
             original_word=original_word
         )
