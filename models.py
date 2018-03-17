@@ -1,31 +1,61 @@
-class Game(object):
-    '''
-    '''
-    pass
-    # game_uuid = UUIDField(unique=True)
-    # word = CharField(max_length=256)
-    # word_length = IntegerField()
-    # result = CharField(max_length=16, default='in_progress')
-    # create_time = DateTimeField(default=datetime.utcnow)
-    # update_time = DateTimeField(default=datetime.utcnow)
+import datetime
+import uuid
 
-    # class Meta:
-    #     database = db
+from mongoengine import connect, Document, EmbeddedDocument
+from mongoengine.fields import (
+    UUIDField,
+    StringField,
+    IntField,
+    DateTimeField,
+    EmbeddedDocumentListField
+)
 
-    # def save(self, *args, **kwargs):
-    #     self.update_time = datetime.utcnow()
-    #     return super(Game, self).save(*args, **kwargs)
+MIN_WORD_LENGTH = 5
+MAX_WORD_LENGTH = 32
+MAX_ATTEMPTS = 8
 
 
-class LetterGuessed(object):
-    '''
-    '''
-    # game = ForeignKeyField(Game, related_name='letters')
-    # letter = CharField(max_length=1)
-    # attempts_left = IntegerField()
-    # message = CharField(max_length=256)
-    # create_time = DateTimeField(default=datetime.utcnow)
+STATUS_IN_PROGRESS = 'in_progress'
+STATUS_WON = 'won'
+STATUS_LOST = 'lost'
 
-    # class Meta:
-    #     database = db
-    pass
+STATUS_CHOICES = (
+    STATUS_IN_PROGRESS,
+    STATUS_WON,
+    STATUS_LOST
+)
+
+connect('hangman')
+
+
+class Game(Document):
+    uuid = UUIDField(unique=True, required=True, default=uuid.uuid4)
+    word = StringField(
+        regex=f'^[a-z]{{{MIN_WORD_LENGTH},{MAX_WORD_LENGTH}}}$',
+        required=True
+    )
+    status = StringField(
+        min_length=3,
+        max_length=16,
+        default=STATUS_IN_PROGRESS,
+        choices=STATUS_CHOICES
+    )
+    updated_at = DateTimeField(default=datetime.datetime.utcnow)
+
+    letters = EmbeddedDocumentListField('LetterGuessed')
+
+    @property
+    def word_length(self):
+        return len(self.word)
+
+    @classmethod
+    def pre_save(cls, sender, document, **kwargs):
+        document.updated_at = datetime.datetime.utcnow()
+
+
+class LetterGuessed(EmbeddedDocument):
+    letter = StringField(min_length=1, max_length=1, required=True)
+    attempts_left = IntField(
+        min_value=0, max_value=MAX_ATTEMPTS, required=True
+    )
+    message = StringField(max_length=128, required=True)
