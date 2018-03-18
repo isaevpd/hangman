@@ -62,7 +62,6 @@ function render(data) {
 
   const lettersLeft = data.available_letters.toUpperCase().split("").join(" ");
   availableLetters.textContent = lettersLeft;
-  console.log(data);
 
   if (data.message) {
     info.textContent = toHumanReadable(data.message);
