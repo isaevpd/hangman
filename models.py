@@ -1,5 +1,6 @@
 import datetime
 import uuid
+import os
 
 from mongoengine import connect, Document, EmbeddedDocument
 from mongoengine.fields import (
@@ -25,7 +26,10 @@ STATUS_CHOICES = (
     STATUS_LOST
 )
 
-connect('hangman')
+connect(
+    'hangman',
+    host=os.environ['MONGODB_URI']
+)
 
 
 class Game(Document):
