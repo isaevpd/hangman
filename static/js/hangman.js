@@ -1,6 +1,5 @@
 
 const form = document.querySelector('form');
-const wordLen = document.querySelector('div#word-len')
 const letterInput = document.querySelector('input');
 const wordElem = document.querySelector('div#word-elem');
 const attemptsElem = document.querySelector('div#attempts-left');
@@ -51,8 +50,6 @@ function render(data) {
 
   wordElem.textContent = data.representation.split("").join(" ");
 
-  wordLen.textContent = "Secret word is " + data.word_length + " letters long.";
-
   attemptsElem.textContent = "Attempts left: " + data.attempts_left;
 
   const lettersUsed = getLettersUsed(data.available_letters);
@@ -102,6 +99,9 @@ else {
 form.addEventListener('submit', event => {
   event.preventDefault()
   const letter = letterInput.value;
+  if (letter === '') {
+    return
+  }
   letterInput.value = '';
   fetch(
     '/api/v1/letter', {
