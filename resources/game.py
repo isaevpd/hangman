@@ -11,8 +11,10 @@ from flask import (
 from flask_restful import (
     Resource, Api, reqparse
 )
-from hangman import loadWords, chooseWord
+
+from utils import load_words, choose_word
 from models import Game, LetterGuessed
+from constants import MAX_ATTEMPTS
 
 
 def valid_letter(value):
@@ -28,9 +30,6 @@ def valid_letter(value):
     return user_input
 
 
-MAX_ATTEMPTS = 8
-
-
 class Word(Resource):
     """
     Used once per game when the game is initialized.
@@ -40,7 +39,7 @@ class Word(Resource):
         """
         Generates random word, game UUID and creates a DB entry for a new game.
         """
-        word = chooseWord(loadWords())
+        word = choose_word(load_words())
         game = Game.objects.create(
             word=word
         )
