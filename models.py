@@ -11,25 +11,22 @@ from mongoengine.fields import (
     EmbeddedDocumentListField
 )
 
-MIN_WORD_LENGTH = 1
-MAX_WORD_LENGTH = 32
-MAX_ATTEMPTS = 8
-
-
-STATUS_IN_PROGRESS = 'in_progress'
-STATUS_WON = 'won'
-STATUS_LOST = 'lost'
-
-STATUS_CHOICES = (
+from constants import (
+    MIN_WORD_LENGTH,
+    MAX_WORD_LENGTH,
+    MAX_ATTEMPTS,
     STATUS_IN_PROGRESS,
-    STATUS_WON,
-    STATUS_LOST
+    STATUS_CHOICES
 )
 
-connect(
-    'hangman',
-    host=os.environ['MONGODB_URI']
-)
+try:
+    connect(
+        host=os.environ['MONGODB_URI']
+    )
+except KeyError:
+    connect(
+        'hangman'
+    )
 
 
 class Game(Document):
