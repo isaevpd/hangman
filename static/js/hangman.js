@@ -99,9 +99,6 @@ else {
 form.addEventListener('submit', event => {
   event.preventDefault()
   const letter = letterInput.value;
-  if (letter === '') {
-    return
-  }
   letterInput.value = '';
   fetch(
     '/api/v1/letter', {

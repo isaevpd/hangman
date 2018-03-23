@@ -208,6 +208,16 @@ class Letter(Resource):
         )
 
 
+class GameLink(Resource):
+    def post(self):
+        return jsonify(
+            token='abcde'
+        )
+
+    def get(self):
+        return
+
+
 game_api = Blueprint('resources.game', __name__)
 api = Api(game_api)
 api.add_resource(
@@ -218,4 +228,9 @@ api.add_resource(
 api.add_resource(
     Letter,
     '/api/v1/letter'
+)
+
+api.add_resource(
+    GameLink,
+    '/api/v1/game_link'
 )
