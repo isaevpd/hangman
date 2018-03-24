@@ -1,4 +1,5 @@
 import string
+import uuid
 
 from flask import (
     jsonify,
@@ -208,6 +209,47 @@ class Letter(Resource):
         )
 
 
+class GameLink(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser(bundle_errors=True)
+        self.reqparse.add_argument(
+            'word',
+            required=True,
+            type=str,
+            help='Letter not provided',
+            location=['form', 'json']
+        )
+        super().__init__()
+
+    def post(self):
+        game_uuid = uuid.uuid4()
+        args = self.reqparse.parse_args()
+        Game.objects.create(
+            uuid=game_uuid,
+            word=args['word']
+        )
+        return jsonify(
+            game_uuid=game_uuid
+        )
+
+
+class GameLinkActivation(Resource):
+    def get(self, game_uuid):
+        """
+        set cookie and redirect if game_uuid is not yet consumed
+        """
+        game = Game.objects.get(uuid=game_uuid)
+        # somebody already started this game
+        if game.letters:
+            return abort(
+                404
+            )
+        # all good, set the cookie and return
+        resp = make_response(redirect(url_for('hangman')))
+        resp.set_cookie('hangman_game_id', str(game.uuid), 86400)
+        return resp
+
+
 game_api = Blueprint('resources.game', __name__)
 api = Api(game_api)
 api.add_resource(
@@ -218,4 +260,14 @@ api.add_resource(
 api.add_resource(
     Letter,
     '/api/v1/letter'
+)
+
+api.add_resource(
+    GameLink,
+    '/api/v1/game_link'
+)
+
+api.add_resource(
+    GameLinkActivation,
+    '/activate/<string:game_uuid>'
 )
