@@ -70,3 +70,11 @@ class LetterGuessed(EmbeddedDocument):
         return (
             f'{self.letter}->{self.attempts_left}->{self.message}'
         )
+
+
+class CustomWord(Document):
+    word = StringField(
+        regex=f'^[a-z]{{{MIN_WORD_LENGTH},{MAX_WORD_LENGTH}}}$',
+        required=True
+    )
+    uuid = UUIDField(unique=True, required=True, default=uuid.uuid4)
