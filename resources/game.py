@@ -16,7 +16,7 @@ from flask_restful import (
 
 from utils import load_words, choose_word
 from models import Game, LetterGuessed, CustomWord
-from constants import MAX_ATTEMPTS
+from constants import MAX_ATTEMPTS, STATUS_IN_PROGRESS
 
 
 def valid_letter(value):
@@ -280,8 +280,7 @@ class GameLinkActivation(Resource):
         except (CustomWord.DoesNotExist, ValueError):
             word = None
 
-        # expire cookie only if user was guessing a different word
-        if current_game.word != word:
+        if current_game.word != word or current_game.status != STATUS_IN_PROGRESS:
             resp.set_cookie('hangman_game_id', '', expires=0)
         return resp
 
