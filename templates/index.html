@@ -33,7 +33,7 @@
             <button class="button" onclick="location.href = '/hangman';">Play against the computer</button>
         </div>
         <div class="row">
-            <h2>Or enter a word and send your friend a link to play!</h2>
+            <h2>Or enter a word and send your friends a link to play!</h2>
         </div>
         <div id="word-input" class="row">
           <form method="POST">
@@ -47,7 +47,7 @@
         const input = document.querySelector("input");
         form.addEventListener('submit', event => {
           event.preventDefault();
-          const word = input.value;
+          const word = input.value.toLowerCase();
 
           fetch('/api/v1/game_link', {
             headers: {
@@ -63,7 +63,7 @@
               else return Promise.reject(res.json())
             }
           ).then(data => {
-            input.value = window.location.href + 'activate/' + data.game_uuid
+            input.value = window.location.href + 'activate/' + data.word_uuid
             input.focus();
             input.select();
           })
