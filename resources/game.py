@@ -7,14 +7,15 @@ from flask import (
     abort,
     make_response,
     redirect,
-    url_for
+    url_for,
+    render_template
 )
 from flask_restful import (
     Resource, Api, reqparse
 )
 
 from utils import load_words, choose_word
-from models import Game, LetterGuessed
+from models import Game, LetterGuessed, CustomWord
 from constants import MAX_ATTEMPTS
 
 
@@ -35,12 +36,29 @@ class Word(Resource):
     """
     Used once per game when the game is initialized.
     """
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser(bundle_errors=True)
+        self.reqparse.add_argument(
+            'custom_word_id',
+            required=False,
+            type=uuid.UUID,
+            help='No game_identifier provided',
+            location=['cookies']
+        )
+        super().__init__()
 
     def post(self):
         """
         Generates random word, game UUID and creates a DB entry for a new game.
         """
-        word = choose_word(load_words())
+        args = self.reqparse.parse_args()
+        try:
+            word = CustomWord.objects.get(
+                uuid=args.get('custom_word_id')
+            ).word
+        except (ValueError, CustomWord.DoesNotExist):
+            word = choose_word(load_words())
+
         game = Game.objects.create(
             word=word
         )
@@ -72,6 +90,7 @@ class Letter(Resource):
         self.reqparse.add_argument(
             'hangman_game_id',
             required=True,
+            type=uuid.UUID,
             help='No game_identifier provided',
             location=['cookies']
         )
@@ -222,31 +241,27 @@ class GameLink(Resource):
         super().__init__()
 
     def post(self):
-        game_uuid = uuid.uuid4()
         args = self.reqparse.parse_args()
-        Game.objects.create(
-            uuid=game_uuid,
-            word=args['word']
-        )
+        word = args['word']
+        try:
+            word_uuid = CustomWord.objects.get(
+                word=word
+            ).uuid
+        except CustomWord.DoesNotExist:
+            word_uuid = CustomWord.objects.create(
+                word=word
+            ).uuid
         return jsonify(
-            game_uuid=game_uuid
+            word_uuid=word_uuid
         )
 
 
 class GameLinkActivation(Resource):
-    def get(self, game_uuid):
-        """
-        set cookie and redirect if game_uuid is not yet consumed
-        """
-        game = Game.objects.get(uuid=game_uuid)
-        # somebody already started this game
-        if game.letters:
-            return abort(
-                404
-            )
-        # all good, set the cookie and return
-        resp = make_response(redirect(url_for('hangman')))
-        resp.set_cookie('hangman_game_id', str(game.uuid), 86400)
+    def get(self, word_uuid):
+        resp = make_response(render_template('hangman.html'))
+        resp.set_cookie('custom_word_id', str(word_uuid), 86400)
+        # reset whatever word user was guessing before
+        resp.set_cookie('hangman_game_id', '', expires=0)
         return resp
 
 
@@ -269,5 +284,5 @@ api.add_resource(
 
 api.add_resource(
     GameLinkActivation,
-    '/activate/<string:game_uuid>'
+    '/activate/<string:word_uuid>'
 )

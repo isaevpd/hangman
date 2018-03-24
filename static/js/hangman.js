@@ -67,7 +67,17 @@ function render(data) {
   }
   if (data.status == "won" || data.status == "lost") {
     hide(document.querySelector("div#main"))
-    document.cookie = "hangman_game_id" + '=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    const custom_game = document.cookie.indexOf("custom_word_id") !== -1
+
+    document.cookie.split(";").forEach(
+      (c) => {
+        document.cookie = c.replace(/^ +/, "").replace(
+            /=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"
+          );
+      });
+    if (custom_game) {
+      window.location.href = "/";
+    }
     status.textContent = msg[data.status] + status.textContent;
     status.style.display = "";
     originalWordEl.textContent = data.original_word;
