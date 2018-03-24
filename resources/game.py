@@ -257,11 +257,32 @@ class GameLink(Resource):
 
 
 class GameLinkActivation(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser(bundle_errors=True)
+        self.reqparse.add_argument(
+            'hangman_game_id',
+            required=False,
+            type=uuid.UUID,
+            location=['cookies']
+        )
+        super().__init__()
+
     def get(self, word_uuid):
         resp = make_response(render_template('hangman.html'))
         resp.set_cookie('custom_word_id', str(word_uuid), 86400)
-        # reset whatever word user was guessing before
-        resp.set_cookie('hangman_game_id', '', expires=0)
+        # if cookie doesn't match the game - reset it
+        game_cookie = self.reqparse.parse_args().get('hangman_game_id')
+        current_game = Game.objects.filter(uuid=game_cookie).first()
+        if current_game is None:
+            return resp
+        try:
+            word = CustomWord.objects.get(uuid=word_uuid).word
+        except (CustomWord.DoesNotExist, ValueError):
+            word = None
+
+        # expire cookie only if user was guessing a different word
+        if current_game.word != word:
+            resp.set_cookie('hangman_game_id', '', expires=0)
         return resp
 
 
