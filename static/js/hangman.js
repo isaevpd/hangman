@@ -10,7 +10,8 @@ const availableLetters = document.querySelector(
 )
 const status = document.querySelector("h3#status");
 const originalWordEl = document.querySelector("h2#original-word");
-const tryAgain = document.querySelector("h3#try-again");
+const newGameButton = document.querySelector("a#new-game-button");
+const homeButton = document.querySelector("a#home-button");
 const msg = {
   won: "You won!",
   lost: "You lost!"
@@ -75,14 +76,14 @@ function render(data) {
             /=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"
           );
       });
-    if (custom_game) {
-      window.location.href = "/";
-    }
-    status.textContent = msg[data.status] + status.textContent;
-    status.style.display = "";
-    originalWordEl.textContent = data.original_word;
-    tryAgain.style.display = "";
 
+    status.textContent = msg[data.status] + status.textContent;
+    originalWordEl.textContent = data.original_word;
+
+    status.classList.remove("hidden");
+    originalWordEl.classList.remove("hidden");
+    newGameButton.classList.remove("hidden");
+    homeButton.classList.remove("hidden");
   }
 }
 

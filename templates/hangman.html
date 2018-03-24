@@ -8,6 +8,7 @@
   <link href='//fonts.googleapis.com/css?family=Roboto:400,300,600' rel='stylesheet' type='text/css'>
   <link rel="stylesheet" href="//cdn.rawgit.com/necolas/normalize.css/master/normalize.css">
   <link rel="stylesheet" href="//cdn.rawgit.com/milligram/milligram/master/dist/milligram.min.css">
+  <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 
 <body>
@@ -47,15 +48,14 @@
         </form>
       </div>
     </div>
-    <div class="row">
-      <h3 id="status" style="display:none"> The original word was:</h3>
+    <div>
+      <h3 id="status" class="hidden"> The original word was:</h3>
     </div>
-    <div class="row">
+    <div>
       <h2 id="original-word"></h2>
     </div>
-    <div class="row">
-      <h3 id="try-again" style="display:none">Would you like to try a different word? Refresh the page to start a new game.</h3>
-    </div>
+      <a id="new-game-button" class="button hidden" href="/hangman">Play against the computer</a>
+      <a id="home-button" class="button hidden" href="/">Home</a>
   </div>
 
   <script src="/static/js/hangman.js"></script>
