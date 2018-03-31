@@ -5,9 +5,7 @@ const wordElem = document.querySelector('div#word-elem');
 const attemptsElem = document.querySelector('div#attempts-left');
 const info = document.querySelector('div#info');
 const lettersUsedEl = document.querySelector("div#letters-used");
-const availableLetters = document.querySelector(
-  "div#available-letters"
-)
+const availableLetters = document.querySelector("div#available-letters");
 const status = document.querySelector("h3#status");
 const originalWordEl = document.querySelector("h2#original-word");
 const newGameButton = document.querySelector("a#new-game-button");
@@ -66,10 +64,8 @@ function render(data) {
     setMessageStyle(info)
     showMessageTimer = setTimeout(() => { info.style.visibility = "hidden"; }, 3000);
   }
-  if (data.status == "won" || data.status == "lost") {
+  if (data.status === "won" || data.status === "lost") {
     hide(document.querySelector("div#main"))
-    const custom_game = document.cookie.indexOf("custom_word_id") !== -1
-
     document.cookie.split(";").forEach(
       (c) => {
         document.cookie = c.replace(/^ +/, "").replace(
