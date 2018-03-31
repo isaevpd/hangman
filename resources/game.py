@@ -14,9 +14,9 @@ from flask_restful import (
     Resource, Api, reqparse
 )
 
-from utils import load_words, choose_word
-from models import Game, LetterGuessed, CustomWord
 from constants import MAX_ATTEMPTS, STATUS_IN_PROGRESS
+from models import Game, LetterGuessed, CustomWord
+from utils import choose_word
 
 
 def valid_letter(value):
@@ -57,7 +57,7 @@ class Word(Resource):
                 uuid=args.get('custom_word_id')
             ).word
         except (ValueError, CustomWord.DoesNotExist):
-            word = choose_word(load_words())
+            word = choose_word()
 
         game = Game.objects.create(
             word=word
@@ -96,21 +96,6 @@ class Letter(Resource):
         )
         super().__init__()
 
-    def get_representation(self, letters_guessed, word):
-        return ''.join(map(
-            lambda l: l if l in letters_guessed else '_',
-            word
-        ))
-
-    def get_available_letters(self, letters_guessed, letter_guessed=None):
-        if letter_guessed:
-            letters_guessed.add(letter_guessed)
-
-        return ''.join(map(
-            lambda l: l if l not in letters_guessed else '',
-            string.ascii_lowercase
-        ))
-
     def get(self):
         args = self.reqparse.parse_args()
         try:
@@ -130,11 +115,11 @@ class Letter(Resource):
                 available_letters=string.ascii_lowercase
             )
         else:
-            letters_guessed = {l.letter for l in game.letters}
-            last_letter = game.letters[-1]
+            letters_guessed = game.letters_guessed
+            last_letter = game.last_letter
 
-            representation = self.get_representation(letters_guessed, word)
-            available_letters = self.get_available_letters(letters_guessed)
+            representation = game.representation
+            available_letters = game.get_available_letters(letters_guessed)
 
             return jsonify(
                 word_length=word_length,
@@ -153,65 +138,40 @@ class Letter(Resource):
             return resp
 
         word = game.word
-        letter_guessed = args['letter'].lower()
-
-        def update_game_status(representation):
-            if representation == word:
-                game.status = 'won'
-
-            elif attempts_left == 0:
-                game.status = 'lost'
-
-            game.save()
-
-            return game.status
-
-        def create_letter(message):
-            letter = LetterGuessed(
-                letter=letter_guessed,
-                attempts_left=attempts_left,
-                message=message
-            )
-            game.letters.append(letter)
-            game.save()
-            return letter
-
-        letters_guessed = {l.letter for l in game.letters}
+        letter = args['letter']
+        letters_guessed = game.letters_guessed
 
         try:
-            last_letter = game.letters[-1]
+            last_letter = game.last_letter
         except IndexError:
             attempts_left = MAX_ATTEMPTS
         else:
             attempts_left = last_letter.attempts_left
 
-        if game.status in ('won', 'lost'):
+        if game.is_over:
             return abort(
                 400, '{"message": "this game is already over"}'
             )
 
-        elif letter_guessed in letters_guessed:
+        elif letter in letters_guessed:
             message = 'already_guessed'
 
-        elif letter_guessed in word:
-            letters_guessed.add(letter_guessed)
+        elif letter in word:
+            letters_guessed.add(letter)
             message = 'correct_guess'
 
         else:
             attempts_left = attempts_left - 1
             message = 'incorrect_guess'
 
-        representation = self.get_representation(letters_guessed, word)
-        status = update_game_status(representation)
+        letter = game.append_letter(letter, attempts_left, message)
 
-        letter = create_letter(message)
-        letter.available_letters = self.get_available_letters(
-            letters_guessed, letter_guessed)
-        letter.representation = representation
-        letter.word_length = len(word)
+        letter.available_letters = game.get_available_letters(
+            letters_guessed | {letter.letter}
+        )
 
         # send back the original word if game is over
-        if status in ('won', 'lost'):
+        if game.is_over:
             original_word = game.word
         else:
             original_word = None
@@ -219,10 +179,10 @@ class Letter(Resource):
         return jsonify(
             word_length=len(word),
             letter=letter.letter,
-            representation=representation,
+            representation=game.representation,
             available_letters=letter.available_letters,
             attempts_left=attempts_left,
-            status=status,
+            status=game.status,
             message=message,
             original_word=original_word
         )
