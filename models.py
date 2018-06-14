@@ -3,7 +3,12 @@ import string
 import uuid
 import os
 
-from mongoengine import connect, Document, EmbeddedDocument
+from mongoengine import (
+    signals,
+    connect,
+    Document,
+    EmbeddedDocument
+)
 from mongoengine.fields import (
     UUIDField,
     StringField,
@@ -52,15 +57,15 @@ class Game(Document):
         )
 
     @classmethod
-    def pre_save(cls, sender, game, **kwargs):
-        game.updated_at = datetime.datetime.utcnow()
+    def pre_save(cls, sender, document, **kwargs):
+        document.updated_at = datetime.datetime.utcnow()
         # update game status if needed
-        if not game.is_over:
-            if game.representation == game.word:
-                game.status = STATUS_WON
+        if not document.is_over:
+            if document.representation == document.word:
+                document.status = STATUS_WON
 
-            elif game.last_letter.attempts_left == 0:
-                game.status = STATUS_LOST
+            elif document.letters and document.last_letter.attempts_left == 0:
+                document.status = STATUS_LOST
 
     @property
     def word_length(self):
@@ -124,3 +129,6 @@ class CustomWord(Document):
         required=True
     )
     uuid = UUIDField(unique=True, required=True, default=uuid.uuid4)
+
+
+signals.pre_save.connect(Game.pre_save, sender=Game)
